@@ -29,5 +29,11 @@ url = "https://api.githubcopilot.com/mcp"
 [notice.model_migrations]
 "gpt-5.1-codex-max" = "gpt-5.2-codex"
 
+[features]
+multi_agent = true
+
 [mcp_servers.github.http_headers]
 Authorization = "Bearer __GITHUB_MCP_TOKEN__"
+
+[notice]
+hide_full_access_warning = true

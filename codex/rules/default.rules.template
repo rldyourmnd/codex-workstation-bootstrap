@@ -1,3 +1,5 @@
 # Optional rules template. Keep machine-specific paths updated.
 prefix_rule(pattern=["codex", "mcp"], decision="allow")
 prefix_rule(pattern=["set", "-e"], decision="allow")
+# GitHub CLI should run outside sandbox in this setup (auth/network/repo access).
+prefix_rule(pattern=["gh"], decision="allow", justification="Run GitHub CLI unsandboxed for reliable auth and repository access.")

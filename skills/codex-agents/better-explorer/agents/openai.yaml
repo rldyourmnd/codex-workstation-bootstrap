@@ -11,6 +11,9 @@ dependencies:
     - type: "mcp"
       value: "sequential-thinking"
       description: "Reasoning synthesis for complex investigations"
+    - type: "mcp"
+      value: "context7"
+      description: "External API/library verification when investigation touches third-party behavior"
 
 policy:
   allow_implicit_invocation: true

@@ -21,7 +21,8 @@ Use when the user asks to:
 2. Build symbol map via `get_symbols_overview` and targeted `find_symbol`.
 3. Trace callers/consumers with `find_referencing_symbols`.
 4. Sweep for focused patterns with `search_for_pattern`.
-5. Synthesize evidence into findings with concrete file references.
+5. For third-party APIs/libraries involved in the flow, verify claims via Context7.
+6. Synthesize evidence into findings with concrete file references.
 
 ## Operating Rules
 

@@ -17,7 +17,7 @@ Use when the user asks to:
 
 ## Primary Workflow
 
-1. Gather constraints from codebase, memories, and task context.
+1. Gather constraints from codebase, Serena memories, and task context.
 2. Run structured reasoning rounds (minimum 5) with sequential thinking.
 3. Cross-check technology claims via Context7.
 4. Evaluate alternatives across correctness, cost, risk, and operability.

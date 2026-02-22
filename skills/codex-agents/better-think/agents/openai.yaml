@@ -11,6 +11,9 @@ dependencies:
     - type: "mcp"
       value: "context7"
       description: "Verification against official docs"
+    - type: "mcp"
+      value: "serena"
+      description: "Memory and symbol context for repository-grounded decisions"
 
 policy:
   allow_implicit_invocation: true

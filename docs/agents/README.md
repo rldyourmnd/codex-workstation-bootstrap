@@ -32,3 +32,9 @@ Skill install:
 ```bash
 scripts/install-codex-agents.sh
 ```
+
+Consistency audit:
+
+```bash
+scripts/audit-codex-agents.sh
+```

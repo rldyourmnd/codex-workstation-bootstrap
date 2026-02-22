@@ -17,6 +17,7 @@ This repository captures your local Codex setup and restores it on another machi
 - `scripts/install.sh`: install config + AGENTS + rules + skills to target machine
 - `scripts/verify.sh`: validate MCP state and installed skill set
 - `scripts/codex-activate.sh`: health check for MCP/skills
+- `scripts/audit-codex-agents.sh`: validate codex-agent profile consistency
 - `scripts/bootstrap.sh`: one-command install + verify + activation check
 - `scripts/self-test.sh`: clean-room smoke test of the transfer flow
 
@@ -82,4 +83,5 @@ scripts/install.sh --dry-run --force --skip-curated --clean-skills
 ```bash
 scripts/verify.sh
 scripts/codex-activate.sh --check-only
+scripts/audit-codex-agents.sh
 ```

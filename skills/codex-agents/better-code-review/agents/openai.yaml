@@ -1,0 +1,13 @@
+interface:
+  display_name: "Better Code Review"
+  short_description: "Risk-first semantic review of code changes"
+  default_prompt: "Use $better-code-review to review this diff and return severity-ordered findings with concrete file references."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "serena"
+      description: "Semantic impact analysis"
+
+policy:
+  allow_implicit_invocation: true

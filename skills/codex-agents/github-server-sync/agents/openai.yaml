@@ -1,0 +1,13 @@
+interface:
+  display_name: "GitHub Server Sync"
+  short_description: "Safe PR sync and release coordination"
+  default_prompt: "Use $github-server-sync to coordinate this PR/branch sync safely and return checks status, actions, and rollback notes."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "github"
+      description: "GitHub state and pull request operations"
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,11 @@
+# OpenAI curated skills currently used in this environment
+skills/.curated/cloudflare-deploy
+skills/.curated/figma-implement-design
+skills/.curated/gh-address-comments
+skills/.curated/pdf
+skills/.curated/playwright
+skills/.curated/security-best-practices
+skills/.curated/security-ownership-map
+skills/.curated/security-threat-model
+skills/.curated/spreadsheet
+skills/.curated/yeet

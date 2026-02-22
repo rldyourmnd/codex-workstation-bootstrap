@@ -1,222 +1,111 @@
 # AGENTS.md - Global Development Rules (Codex)
 
-This root AGENTS.md governs the entire repository tree unless a deeper AGENTS.md overrides parts of it.
+## CORE PRINCIPLES - APPLY TO EVERY REQUEST
+Please think step by step, very deep and very hard. Work with surgical precision. Deliver a fully synchronized, consistent system. Use correct development patterns, clean code, and clean architecture. Follow best practices at all times. Priority is ALWAYS quality and accuracy over speed - never use hacks, temporary solutions, or simplifications. Your work and attention to detail are very important to me.
 
-## 0. Instruction Precedence and Scope
+## MCP TOOLS - CRITICAL
 
-1. Direct system/developer/user instructions override AGENTS.md.
-2. More deeply nested AGENTS.md files override this file for their subtree.
-3. This file is the primary Codex behavior contract for this repository.
-4. `~/.claude/CLAUDE.md` is a high-value context source for quality standards and tool discipline; use it as a strong reference unless it conflicts with higher-priority instructions.
+### Session Startup - MANDATORY
+1. Serena: follow Serena Workflow below (activate, memories, context)
+2. Context7: query ALL project dependencies before coding
+3. Sequential Thinking: plan task (minimum 5 rounds)
 
-## 1. Core Principles - Apply to Every Request
+### Tool Priority
+| Task | Primary Tool | Fallback | Notes |
+| Symbol search | Serena find_symbol | Grep | Never raw grep for code symbols |
+| Code editing | Serena symbolic tools | Edit | Prefer replace_symbol_body |
+| File creation | Serena insert_after_symbol | Write | Maintain code structure |
+| External libraries | Context7 query-docs | WebSearch | Query BEFORE any usage |
+| Planning | Sequential Thinking | - | All decisions require this |
+| Project knowledge | Serena memories | - | Source of truth for project |
+| Code relationships | Serena find_referencing_symbols | Grep | Trace symbol usage via LSP |
+| Codebase research | better-explorer agent | Explore agent | Deep investigation with Serena semantic tools |
+| GitHub actions | GitHub MCP | gh CLI | Prefer MCP first |
 
-1. Think step by step, deeply, and with explicit reasoning.
-2. Optimize for correctness, consistency, and maintainability over speed.
-3. Use clean architecture and reversible changes; avoid hacks and temporary shortcuts.
-4. Keep outputs operational: concrete actions, verifiable checks, and clear tradeoffs.
-5. Maintain high signal: concise where possible, detailed where needed.
+### Context7
+Query docs before using ANY external library: new deps, unfamiliar APIs, version features, breaking changes.
 
-## 2. Project Context Snapshot
-
-- Project: portable Codex environment backup/bootstrap (`better-codex`).
-- Platform: Linux (primary), cross-machine replication target.
-- Primary goal: keep Codex config, MCP setup, skills, and agent workflows synchronized across PCs.
-- Architecture anchor: `README.md`, `codex/config/*`, `codex/skills/*`, `scripts/*`, `skills/codex-agents/*`.
-
-## 3. Key Paths (Source of Truth)
-
-- `scripts/`: install/export/verify/bootstrap entrypoints.
-- `codex/config/`: portable Codex config template.
-- `codex/skills/`: custom skills bundle + curated manifest.
-- `skills/codex-agents/`: source-tracked custom agent skills.
-- `docs/agents/`: operational profiles for custom agents.
-- `.serena/memories/`: project memories.
-- `~/.claude/CLAUDE.md`: global engineering baseline and quality reference.
-
-## 4. Session Startup - Mandatory
-
-Run at session start for MCP-heavy, skills-heavy, or environment-sensitive tasks:
-
-```bash
-scripts/codex-activate.sh --check-only
-```
-
-If required MCP entries are disabled:
-
-```bash
-scripts/codex-activate.sh
-```
-
-For complex planning tasks, use sequential reasoning before implementation.
-
-### 4.1 Execution Mode Baseline (Fixed For This Repo)
-
-Default operating mode is full-auto for trusted local workflows:
-
-- `approval_policy = "never"`
-- `sandbox_mode = "danger-full-access"`
-
-Equivalent launch:
-
-```bash
-codex --ask-for-approval never --sandbox danger-full-access
-```
-
-Use stricter sandbox/approval only when explicitly requested for a task.
-
-## 5. MCP Tools - Operational Policy
-
-### 5.1 Required MCP Servers
-
-- `context7`
-- `github`
-- `sequential-thinking`
-- `shadcn`
-- `serena`
-- `playwright`
-
-### 5.2 Tool Priority Matrix
-
-| Task | Primary | Fallback | Policy |
-|---|---|---|---|
-| Symbol discovery | Serena (`find_symbol`) | `rg` | Prefer semantic search first |
-| Symbol references | Serena (`find_referencing_symbols`) | `rg` | Prove usage before refactor/delete |
-| Code editing | Serena symbolic ops | `apply_patch` | Keep edits structurally coherent |
-| External docs/APIs | Context7 | Web search | Query before unfamiliar API usage |
-| Planning | Sequential Thinking | Manual plan | Use for high-impact decisions |
-| Browser/UI validation | Playwright MCP | scripted checks | Collect evidence (screenshots/errors) |
-| GitHub metadata/actions | GitHub MCP | `gh` CLI | Prefer MCP first; when using `gh`, run unsandboxed because sandboxed mode can break auth/network/repo access |
-
-### 5.3 Context7 Rule
-
-Query Context7 before introducing or changing usage of:
-
-- new dependencies,
-- unfamiliar APIs,
-- version-sensitive behavior,
-- potentially breaking options.
-
-### 5.4 Web Search and Documentation Policy
-
-1. For technical APIs/libraries, use Context7 first.
-2. Web search is allowed only for trusted, current sources:
-   - official vendor docs,
+### Web Search Policy
+1. Use Context7 first for technical docs and APIs.
+2. Web search only on trusted, current, primary sources:
+   - official vendor documentation,
    - official GitHub repositories/releases/changelogs,
-   - standards bodies and primary specifications,
+   - standards/specification sources,
    - authoritative package registries.
-3. Always prefer the most recent stable documentation and include concrete dates when freshness matters.
-4. Avoid random blogs/SEO mirrors unless there is no primary source.
+3. Prefer latest stable docs and concrete dates for freshness-sensitive facts.
+4. Avoid low-quality mirrors and SEO blogs when primary sources exist.
 
-## 6. Serena Workflow (Codex)
+### Serena Workflow - FOLLOW THIS ORDER
+Serena provides LSP-powered semantic code tools. Always prefer over raw grep/read for code operations.
 
-### 6.1 Investigation Flow
-
-1. `activate_project`
-2. `list_memories`
-3. `read_memory` (relevant only)
-4. `get_symbols_overview`
-5. `find_symbol` (`include_body=false` first)
-6. `find_symbol` (`include_body=true` only for needed symbols)
-7. `find_referencing_symbols`
-8. `search_for_pattern` (targeted)
-
-### 6.2 Editing Flow
-
-1. `find_symbol` (`include_body=true`) on target.
-2. `replace_symbol_body` for full-symbol updates.
-3. `insert_before_symbol` / `insert_after_symbol` for additive changes.
-4. `rename_symbol` for semantic renames.
-5. Use `apply_patch` for non-symbolic or multi-file text-level updates.
-
-### 6.3 Efficiency Rules
-
-1. Do not read full files when symbolic overview is sufficient.
-2. Expand scope only when evidence requires it.
-3. Validate dead-code assumptions via references, not intuition.
-4. Parallelize independent lookups whenever safe.
-
-## 7. Skills Routing (Codex)
-
-Use matching installed skills when intent is clear or user names them explicitly.
-
-| Task Type | Skill |
-|---|---|
-| AGENTS/policy optimization | `codex-md-improver`, `writing-rules` |
-| Existing repo onboarding | `init-project` |
-| New project bootstrap | `create-project` |
-| Session/project health snapshot | `status` |
-| Code review/risk detection | `code-reviewer` |
-| Command automation | `command-development` |
-| Guardrails/checks/policies | `hook-development` |
-| UI/UX and frontend polish | `frontend-design` |
-| Browser test flows | `webapp-testing`, `playwright` |
-| SQL authoring/optimization | `sql-queries` |
-| Multi-source investigation | `search-strategy` |
-| Deep exploration agent | `better-explorer` |
-| Tactical planner agent | `better-plan` |
-| Deep reasoning agent | `better-think` |
-| Semantic review agent | `better-code-review` |
-| Debugging agent | `better-debugger` |
-| Manual QA agent | `manual-tester` |
-| Memory synchronization agent | `serena-sync` |
-| Version audit agent | `version-patrol` |
-| GitHub sync agent | `github-server-sync` |
-| Cloudflare deployment | `cloudflare-deploy` |
-| Security-oriented analyses | `security-best-practices`, `security-ownership-map`, `security-threat-model` |
-| Data/office artifacts | `spreadsheet`, `pptx`, `pdf` |
-| GH comments and PR flow | `gh-address-comments`, `yeet` |
-
-## 8. Custom Agents (Codex-Native Profiles)
-
-These agents are active as Codex skills and are ready for routing.
-Source definitions live under `skills/codex-agents/*` and operational profiles under `docs/agents/*`.
-
-### 8.1 Global Agent Constraints
-
-1. No external CLI orchestration as a required dependency for agent behavior.
-2. No mandatory `exec` wrappers for agent logic.
-3. Prefer MCP tools + skills + repository scripts.
-4. Each agent must produce auditable outputs (artifacts, checklists, logs, or diffs).
-
-### 8.2 Agent Registry (Active)
-
-- `better-explorer` -> deep codebase investigation
-- `serena-sync` -> memory management and freshness
-- `version-patrol` -> dependency/version freshness checks
-- `better-think` -> deep multi-pass reasoning
-- `better-plan` -> tactical implementation planning
-- `better-code-review` -> semantic risk-focused review
-- `manual-tester` -> live API and workflow validation
-- `better-debugger` -> production/root-cause debugging
-- `github-server-sync` -> safe GitHub + deployment sync flow
-
-Detailed profiles live in `docs/agents/`.
-Install/sync command:
-
-```bash
-scripts/install-codex-agents.sh
+**Reading code (investigation, exploration):**
+```
+1. activate_project           -> establish LSP connection for the project
+2. list_memories              -> discover what project knowledge exists
+3. read_memory (relevant)     -> understand conventions, architecture, patterns
+4. get_symbols_overview       -> map symbols in target files WITHOUT reading full content
+5. find_symbol (include_body=false, depth=1) -> discover children of key classes/modules
+6. find_symbol (include_body=true)           -> read only the specific implementations you need
+7. find_referencing_symbols   -> trace usage chains, detect dead code, map callers
+8. search_for_pattern         -> sweep for specific patterns across codebase (regex)
 ```
 
-## 9. Serena Memories Policy
+**Editing code (modifications):**
+```
+1. find_symbol (include_body=true) -> read current implementation
+2. replace_symbol_body             -> replace entire symbol definition
+3. insert_after_symbol             -> add new code after existing symbol
+4. insert_before_symbol            -> add new code before existing symbol
+5. rename_symbol                   -> rename with LSP-aware refactoring
+6. replace_content                 -> regex-based partial edits within files
+```
 
-### 9.1 Locations
+**Key efficiency rules:**
+- NEVER read full files when `get_symbols_overview` + targeted `find_symbol` suffices
+- Use `find_symbol` with `include_body=false` first, then `include_body=true` only for symbols you need
+- Use `find_referencing_symbols` to PROVE dead code, not guess
+- Use `search_for_pattern` with `file_pattern` to narrow scope
+- Spawn parallel tool calls when querying multiple independent symbols/files
 
-- `.serena/memories/`: project memories and architecture facts.
-- `.serena/reasoning/`: deep reasoning artifacts (create when needed).
-- `.serena/plans/`: tactical plans (create when needed).
+### Sequential Thinking
+Use for all planning decisions. Minimum 5 rounds. Set `nextThoughtNeeded: true` until resolved.
 
-### 9.2 Naming Convention
+## SERENA MEMORIES
 
-`[AREA]_[NN]_[name].md`
+### Location
+| Directory | Purpose | Managed by |
+| `.serena/memories/` | Project knowledge, architecture, patterns, conventions | serena-sync agent |
+| `.serena/reasoning/` | Deep reasoning artifacts, architecture decisions, design docs | better-think agent |
+| `.serena/plans/` | Tactical implementation plans, step-by-step blueprints | better-plan agent |
+| `.claude/agent-memory/serena-sync/` | Persistent operation log, memory registry, change history | serena-sync (memory: project) |
+| `.claude/agent-memory/better-debugger/` | Past bugs, root causes, recurring error patterns | better-debugger (memory: project) |
+| `.claude/agent-memory/manual-tester/` | Test scenarios, past failures, regression suite, test data | manual-tester (memory: project) |
+| `~/.claude/agent-memory/better-code-review/` | Developer error patterns across ALL projects | better-code-review (memory: user) |
 
-Areas:
+### Naming Convention
+Format: `[AREA]_[NN]_[name].md`
 
-- `CORE`, `BACKEND`, `FRONTEND`, `MOBILE`, `INFRA`, `API`, `AUTH`, `DATA`
+| Area | Usage |
+| CORE | Project-wide, overview, conventions |
+| BACKEND | Server, API, database |
+| FRONTEND | UI, components, state |
+| MOBILE | Flutter/Dart specific |
+| INFRA | DevOps, CI/CD, deployment |
+| API | Endpoints, contracts, schemas |
+| AUTH | Authentication, authorization |
+| DATA | Models, migrations, seeds |
 
-### 9.3 Required Metadata Header
+### Update Triggers
+| Event | Action |
+| Merge to main | Update changelog, technical docs |
+| New feature | Create/update feature memory |
+| Architecture change | Update architecture memory |
+| New pattern introduced | Document in patterns memory |
+| Before delivery | Verify all memories current |
 
-```html
+### Memory Metadata Header - REQUIRED
+Every memory MUST start with a metadata block for freshness tracking:
+```
 <!-- Memory Metadata
 Last updated: YYYY-MM-DD
 Last commit: <short-hash> <commit-message>
@@ -225,131 +114,94 @@ Area: <AREA tag>
 -->
 ```
 
-### 9.4 Update Triggers
+### Memory Content Structure
+- Metadata header first (see above)
+- Sections: Overview, Architecture, Key Files, Patterns, Dependencies, Current State
+- Use only sections relevant to the memory's scope
+- Facts only, no opinions or recommendations
+- Cross-reference related memories by name
+- Use exact file paths from the project
+- Keep focused - split large memories into smaller ones
 
-- Merge to `main`
-- New feature
-- Architecture change
-- New reusable pattern
-- Before delivery when facts changed
+## CUSTOM AGENTS
 
-## 10. Git Workflow
+Always prefer specialized agents over built-in agents and direct tool calls. Agents use Serena LSP and MCP tools.
 
-### 10.1 Branch Strategy
+### Agent Routing
+| Task | Agent | Model | Color | When to Use |
+| Codebase exploration | better-explorer | Sonnet | blue | ANY code investigation, research, architecture analysis, quality audit, tracing implementations, finding patterns |
+| Memory management | serena-sync | Sonnet | green | Create, update, audit, delete Serena memories. Persistent operation tracking |
+| Version freshness | version-patrol | Sonnet | yellow | Check ALL deps, runtimes, tooling, infra against latest stable. Uses WebSearch + Context7 |
+| Deep reasoning | better-think | Sonnet | purple | Multi-pass reasoning with Sequential Thinking + Context7 + code evidence |
+| Implementation planning | better-plan | Sonnet | cyan | Tactical plans with Serena + Sequential Thinking + Context7. ALWAYS enter plan mode first |
+| Code review | better-code-review | Sonnet | orange | Semantic review via Serena LSP. Scope: git diff, files, branches. Bugs, security, breaking changes |
+| Live API testing | manual-tester | Sonnet | magenta | QA via curl + SSH. Auto-discovers endpoints from code, tests live server, monitors logs |
+| Production debugging | better-debugger | Sonnet | white | SSH logs + Serena LSP code tracing + git blame. Root cause analysis |
+| Deploy pipeline | github-server-sync | Sonnet | red | Commits, PR to dev, auto-merge, SSH server sync, verification. GitHub MCP |
 
-- `main`: production-ready
-- `dev`: integration
-- `feature/*`: feature work -> `dev`
-- `bugfix/*`: fixes -> `dev`
-- `hotfix/*`: critical fixes -> `main` and back-merge
+### Agent Notes
+- **better-explorer**: Primary exploration agent. Always prefer over built-in Explore agent.
+- **serena-sync**: 4 modes: CREATE, UPDATE, AUDIT, DELETE. `memory: project` for operation tracking.
+- **version-patrol**: Dynamic tool selection: WebSearch or Context7 depending on availability.
+- **better-plan**: ALWAYS enter plan mode (EnterPlanMode) BEFORE invoking. Tactical HOW, not strategic WHY (that's better-think). Saves to `.serena/plans/`.
+- **better-think**: Strictly sequential: Sequential Thinking -> Context7 -> synthesis. Saves to `.serena/reasoning/`.
+- **better-code-review**: Read-only semantic review. Pass scope in prompt: git diff, branch diff, or files. `memory: user`.
 
-### 10.2 Commit Policy
+SSH agents share base params: `SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SERVER_PROJECT_PATH`.
+- **manual-tester**: SSH base + `API_BASE_URL`. `memory: project`.
+- **better-debugger**: SSH base + optional `LOG_PATH`, `SYMPTOM`. `memory: project`.
+- **github-server-sync**: SSH base + `RESTART_CMD`. Never force pushes, never restarts server.
 
-Use Conventional Commits:
+## GIT WORKFLOW
 
-```text
+### Branch Strategy
+| Branch | Purpose | Merge Target |
+| main | Production-ready code | - |
+| dev | Development integration | main |
+| feature/* | New features | dev |
+| bugfix/* | Bug fixes | dev |
+| hotfix/* | Critical production fixes | main, dev |
+
+### Commit Messages
+Format: Conventional Commits
+```
 type(scope): description
+
+[optional body]
 ```
 
-Types:
+Types: feat, fix, refactor, docs, test, chore, perf, style
 
-- `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`
+Rules: English only, descriptive, atomic (one logical change), no emojis.
 
-Rules:
+### Workflow Rules
+| NEVER | ALWAYS |
+| Force push main/dev | Pull before push |
+| Skip tests | Test before commit |
+| Commit secrets | Self-review changes |
+| Large uncommented changes | Keep commits atomic |
+| Commit broken code | Verify build passes |
 
-1. English only.
-2. Atomic logical change per commit.
-3. No secrets, no generated noise unless intentional.
-4. Self-review before commit/push.
+## CODE STANDARDS
 
-### 10.3 Never / Always
+### Language-Specific Rules
+Detailed rules per language in `~/.claude/rules/` (loaded conditionally via `paths:` frontmatter - only when working with matching files):
+TS/TSX, JS/JSX, Python, Rust, C++, C, Dart, PHP, CSS/SCSS, Shell, Docker.
+Includes naming conventions, patterns, FSD (frontend), VSA (backend).
 
-Never:
+### Absolute Rules - NO EXCEPTIONS
+- No AI attribution or co-authorship anywhere - user is sole author of ALL output
+- No hardcoded secrets or configs - all in .env (SCREAMING_SNAKE_CASE)
+- No emojis, stickers, marketing language
+- No .md files unless explicitly requested
+- English only: code, comments, commits, docs
 
-- force-push protected branches,
-- skip validation knowingly,
-- commit secrets,
-- commit broken builds.
+### Code Quality Rules
+**Comments**: Complex logic only, explain WHY not WHAT, technical language, no separators (`---`), no em dashes (use hyphen)
+**Errors**: Try-catch at boundaries, custom error classes, meaningful messages, log levels (debug/info/warn/error), never swallow
+**Security**: Input validation, parameterized queries, no secrets in logs, sanitize output, OWASP top 10
+**Testing**: Real behavior tests, mock only external services, meaningful assertions, edge cases, descriptive names
 
-Always:
+## QUALITY GATES
 
-- pull/rebase consciously,
-- run relevant checks before commit,
-- keep diffs focused and reversible,
-- document non-obvious decisions.
-
-## 11. Code Standards
-
-### 11.1 Shell Scripts
-
-1. Start with `#!/usr/bin/env bash` and `set -euo pipefail`.
-2. Keep operations idempotent.
-3. Fail with actionable messages.
-
-### 11.2 Comments and Error Handling
-
-1. Explain why, not what.
-2. Use explicit, meaningful errors.
-3. Do not silently swallow failures.
-
-### 11.3 Security Baseline
-
-1. Validate inputs.
-2. Avoid credential leakage in logs/output.
-3. Use parameterized queries where applicable.
-4. Avoid hardcoded secrets/config values.
-
-### 11.4 Testing Baseline
-
-1. Test real behavior where practical.
-2. Cover edge cases and failure paths.
-3. Keep assertions specific and useful.
-
-### 11.5 Language Rules Reference
-
-Host-level language rules are available at:
-
-- `~/.claude/rules/typescript.md`
-- `~/.claude/rules/javascript.md`
-- `~/.claude/rules/python.md`
-- `~/.claude/rules/rust.md`
-- `~/.claude/rules/cpp.md`
-- `~/.claude/rules/c.md`
-- `~/.claude/rules/dart.md`
-- `~/.claude/rules/php.md`
-- `~/.claude/rules/css.md`
-- `~/.claude/rules/shell.md`
-- `~/.claude/rules/docker.md`
-
-Use them as style references when relevant to touched files.
-
-## 12. Quality Gates (Before Final Delivery)
-
-1. Relevant lint/type/test checks pass or explicitly explain why not run.
-2. New/changed behavior validated at appropriate level.
-3. No secrets added.
-4. Docs/memories updated when architecture or workflows changed.
-5. MCP/skills assumptions validated for environment-sensitive tasks.
-6. Final response includes what changed, where, and residual risks.
-
-## 13. Quick Commands
-
-```bash
-# MCP + skills quick health check
-scripts/codex-activate.sh --check-only
-
-# Attempt auto-enable + validate
-scripts/codex-activate.sh
-
-# Install source-tracked Codex agents
-scripts/install-codex-agents.sh
-
-# Explicit full-auto session
-codex --ask-for-approval never --sandbox danger-full-access
-
-# Inspect MCP table
-codex mcp list
-
-# Full local installer
-./scripts/install.sh
-```
+Before any commit: type checks pass, linter passes, tests pass, project patterns followed, Serena memories updated if applicable.

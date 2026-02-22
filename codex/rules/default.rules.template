@@ -1,0 +1,3 @@
+# Optional rules template. Keep machine-specific paths updated.
+prefix_rule(pattern=["codex", "mcp"], decision="allow")
+prefix_rule(pattern=["set", "-e"], decision="allow")

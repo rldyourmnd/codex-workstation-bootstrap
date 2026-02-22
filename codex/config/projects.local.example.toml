@@ -1,0 +1,5 @@
+# Optional local-only trust entries.
+# Append this content manually to ~/.codex/config.toml on each machine.
+
+[projects."/home/<user>/Desktop/projects/example"]
+trust_level = "trusted"

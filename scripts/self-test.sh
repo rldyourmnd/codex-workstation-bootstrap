@@ -10,10 +10,13 @@ err() { echo "[SELF-TEST][ERROR] $*"; }
 
 cd "$ROOT_DIR"
 
-for f in scripts/install.sh scripts/verify.sh scripts/codex-activate.sh scripts/export-from-local.sh scripts/bootstrap.sh; do
+for f in scripts/install.sh scripts/verify.sh scripts/codex-activate.sh scripts/export-from-local.sh scripts/bootstrap.sh scripts/audit-codex-agents.sh; do
   bash -n "$f"
 done
 say "Shell syntax: OK"
+
+scripts/audit-codex-agents.sh
+say "Agent profile audit: OK"
 
 rm -rf "$TEST_HOME"
 mkdir -p "$TEST_HOME"

@@ -3,3 +3,6 @@
 *.token*
 .env
 .env.*
+
+# Local Serena runtime state
+.serena/

@@ -95,3 +95,11 @@ The custom skills bundle also includes local Codex-native skills and agents migr
 - Agent skills: `better-explorer`, `better-plan`, `better-think`, `better-code-review`, `manual-tester`, `better-debugger`, `serena-sync`, `version-patrol`, `github-server-sync`
 
 These are packed into `codex/skills/custom-skills.tar.gz.b64` by `scripts/export-from-local.sh`.
+
+## Agent Source Layout
+
+In addition to packed custom bundles, this repo now tracks explicit Codex agent source files:
+
+- `skills/codex-agents/*` - agent skill source directories (`SKILL.md` + `agents/openai.yaml`)
+- `docs/agents/*` - operational agent profiles
+- `scripts/install-codex-agents.sh` - install source agents into `~/.codex/skills`

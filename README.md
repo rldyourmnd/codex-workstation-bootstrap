@@ -86,3 +86,12 @@ scripts/codex-activate.sh --check-only
 ```bash
 scripts/install.sh --force --skip-curated
 ```
+
+## Included Local Codex Extensions
+
+The custom skills bundle also includes local Codex-native skills and agents migrated from your working setup:
+
+- Project lifecycle: `init-project`, `create-project`, `status`
+- Agent skills: `better-explorer`, `better-plan`, `better-think`, `better-code-review`, `manual-tester`, `better-debugger`, `serena-sync`, `version-patrol`, `github-server-sync`
+
+These are packed into `codex/skills/custom-skills.tar.gz.b64` by `scripts/export-from-local.sh`.

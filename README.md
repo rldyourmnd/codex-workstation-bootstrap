@@ -1,52 +1,48 @@
 # better-codex
 
-Portable Codex environment backup and bootstrap.
+Production-ready, portable Codex environment mirror.
 
-This repository is designed to replicate your Codex setup across PCs with minimal manual steps.
+This repository captures your local Codex setup and restores it on another machine in a few commands.
 
-## Included
+## What is mirrored
 
-- `codex/config/config.template.toml`: sanitized Codex config template
-- `codex/skills/custom-skills.tar.gz.b64`: archive of custom/adapted skills
-- `codex/skills/custom-skills.sha256`: integrity hash for packed custom skills
-- `codex/skills/curated-manifest.txt`: curated OpenAI skills list
-- `scripts/install.sh`: install/sync config + skills on target machine
-- `scripts/verify.sh`: verify required MCP + custom skills
-- `scripts/codex-activate.sh`: MCP/skills health check
-- `scripts/export-from-local.sh`: refresh this repo from local `~/.codex`
-- `scripts/self-test.sh`: clean-room transfer smoke test
-- `templates/AGENTS.md`: Codex-first AGENTS template
+- `codex/config/config.template.toml`: sanitized global Codex config template
+- `codex/agents/global.AGENTS.md`: global `~/.codex/AGENTS.md` snapshot
+- `codex/rules/default.rules`: global rules snapshot (home path tokenized as `__HOME__`)
+- `codex/skills/custom-skills.tar.gz.b64`: packed non-system skills snapshot
+- `codex/skills/custom-skills.sha256`: integrity checksum for packed skills
+- `codex/skills/custom-skills.manifest.txt`: exact skill list from snapshot
+- `codex/skills/curated-manifest.txt`: optional curated skill refresh list
+- `scripts/export-from-local.sh`: refresh repo from current local `~/.codex`
+- `scripts/install.sh`: install config + AGENTS + rules + skills to target machine
+- `scripts/verify.sh`: validate MCP state and installed skill set
+- `scripts/codex-activate.sh`: health check for MCP/skills
+- `scripts/bootstrap.sh`: one-command install + verify + activation check
+- `scripts/self-test.sh`: clean-room smoke test of the transfer flow
 
 ## Security
 
-Secrets are not stored in git.
+Secrets are not committed to git.
 
 Provide at install time:
 
 - `CONTEXT7_API_KEY`
 - `GITHUB_MCP_TOKEN`
 
-## Source machine workflow (this PC)
-
-Update the portable package from current Codex state:
+## Source machine: refresh snapshot
 
 ```bash
 scripts/export-from-local.sh
+scripts/self-test.sh
 ```
 
-Optional custom source path:
+Optional source path:
 
 ```bash
 scripts/export-from-local.sh /path/to/.codex
 ```
 
-Run transfer smoke test before push:
-
-```bash
-scripts/self-test.sh
-```
-
-## Target machine workflow
+## Target machine: restore full state
 
 1. Install Codex CLI:
 
@@ -63,43 +59,27 @@ export CONTEXT7_API_KEY='ctx7sk-...'
 export GITHUB_MCP_TOKEN="$(gh auth token)"
 ```
 
-4. Install config and skills:
+4. Run full bootstrap:
 
 ```bash
-scripts/install.sh --force
+scripts/bootstrap.sh --skip-curated
 ```
 
-5. Verify:
+`--skip-curated` keeps restore deterministic from the committed snapshot.
+
+If you want an additional curated refresh from `openai/skills`, run without `--skip-curated`.
+
+## Quick commands
+
+- Dry-run install:
+
+```bash
+scripts/install.sh --dry-run --force --skip-curated --clean-skills
+```
+
+- Verify current setup:
 
 ```bash
 scripts/verify.sh
 scripts/codex-activate.sh --check-only
 ```
-
-## Notes
-
-- `scripts/install.sh` does not modify `~/.codex/auth.json`.
-- Curated skills are installed from `openai/skills` via local skill-installer if available.
-- `scripts/install.sh` verifies packed custom skill integrity when `sha256sum` is available.
-- If curated installer is unavailable, use:
-
-```bash
-scripts/install.sh --force --skip-curated
-```
-
-## Included Local Codex Extensions
-
-The custom skills bundle also includes local Codex-native skills and agents migrated from your working setup:
-
-- Project lifecycle: `init-project`, `create-project`, `status`
-- Agent skills: `better-explorer`, `better-plan`, `better-think`, `better-code-review`, `manual-tester`, `better-debugger`, `serena-sync`, `version-patrol`, `github-server-sync`
-
-These are packed into `codex/skills/custom-skills.tar.gz.b64` by `scripts/export-from-local.sh`.
-
-## Agent Source Layout
-
-In addition to packed custom bundles, this repo now tracks explicit Codex agent source files:
-
-- `skills/codex-agents/*` - agent skill source directories (`SKILL.md` + `agents/openai.yaml`)
-- `docs/agents/*` - operational agent profiles
-- `scripts/install-codex-agents.sh` - install source agents into `~/.codex/skills`

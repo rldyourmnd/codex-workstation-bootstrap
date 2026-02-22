@@ -20,5 +20,5 @@ Installed agents:
 - github-server-sync
 
 Policy:
-- No external `codex exec` / `gemini` orchestration loops.
+- No mandatory external orchestration loops as a required runtime dependency.
 - Prefer Codex MCP tools + skills + repository scripts.

@@ -17,16 +17,28 @@ REQUIRED_MCPS=(
 
 REQUIRED_CUSTOM_SKILLS=(
   "agent-development"
+  "better-code-review"
+  "better-debugger"
+  "better-explorer"
+  "better-plan"
+  "better-think"
   "code-reviewer"
   "codex-md-improver"
   "command-development"
   "frontend-design"
+  "github-server-sync"
   "hook-development"
-  "pptx"
+  "init-project"
+  "create-project"
+  "manual-tester"
   "search-strategy"
+  "serena-sync"
   "sql-queries"
+  "status"
+  "version-patrol"
   "webapp-testing"
   "writing-rules"
+  "pptx"
 )
 
 say() { echo "[INFO] $*"; }

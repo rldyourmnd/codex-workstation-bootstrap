@@ -49,6 +49,18 @@ REQUIRED_SKILLS=(
   "spreadsheet"
   "yeet"
   "playwright"
+  "better-explorer"
+  "serena-sync"
+  "version-patrol"
+  "better-think"
+  "better-plan"
+  "better-code-review"
+  "manual-tester"
+  "better-debugger"
+  "github-server-sync"
+  "init-project"
+  "create-project"
+  "status"
 )
 
 warn_count=0

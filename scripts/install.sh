@@ -9,10 +9,13 @@ TARGET_GLOBAL_AGENTS="$CODEX_HOME_DIR/AGENTS.md"
 TARGET_RULES_DIR="$CODEX_HOME_DIR/rules"
 TARGET_RULES_FILE="$TARGET_RULES_DIR/default.rules"
 TARGET_SKILLS_DIR="$CODEX_HOME_DIR/skills"
+RULES_MODE_FILE="$CODEX_HOME_DIR/.better-codex-rules-mode"
 
 GLOBAL_AGENTS_SRC="$ROOT_DIR/codex/agents/global.AGENTS.md"
-RULES_FULL_SRC="$ROOT_DIR/codex/rules/default.rules"
+RULES_PORTABLE_SRC="$ROOT_DIR/codex/rules/default.rules"
+RULES_SOURCE_SNAPSHOT="$ROOT_DIR/codex/rules/default.rules.source.snapshot"
 RULES_TEMPLATE_SRC="$ROOT_DIR/codex/rules/default.rules.template"
+PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
 CUSTOM_SKILLS_SRC="$ROOT_DIR/codex/skills/custom"
 CUSTOM_SKILLS_ARCHIVE_B64="$ROOT_DIR/codex/skills/custom-skills.tar.gz.b64"
 CUSTOM_SKILLS_SHA256="$ROOT_DIR/codex/skills/custom-skills.sha256"
@@ -24,6 +27,8 @@ FORCE=false
 DRY_RUN=false
 SKIP_CURATED=false
 CLEAN_SKILLS=false
+RULES_MODE="exact"
+APPLY_PROJECT_TRUST=true
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,9 +48,21 @@ while [[ $# -gt 0 ]]; do
       CLEAN_SKILLS=true
       shift
       ;;
+    --rules-mode)
+      if [[ $# -lt 2 ]]; then
+        echo "[ERROR] --rules-mode requires value: portable|exact"
+        exit 1
+      fi
+      RULES_MODE="$2"
+      shift 2
+      ;;
+    --skip-project-trust)
+      APPLY_PROJECT_TRUST=false
+      shift
+      ;;
     *)
       echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/install.sh [--force] [--dry-run] [--skip-curated] [--clean-skills]"
+      echo "Usage: scripts/install.sh [--force] [--dry-run] [--skip-curated] [--clean-skills] [--rules-mode portable|exact] [--skip-project-trust]"
       exit 1
       ;;
   esac
@@ -54,6 +71,11 @@ done
 say() { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*"; }
 err() { echo "[ERROR] $*"; }
+
+if [[ "$RULES_MODE" != "portable" && "$RULES_MODE" != "exact" ]]; then
+  err "Invalid --rules-mode value: $RULES_MODE (expected portable|exact)"
+  exit 1
+fi
 
 run() {
   if $DRY_RUN; then
@@ -132,6 +154,29 @@ run cp "$TMP_CONFIG" "$TARGET_CONFIG"
 rm -f "$TMP_CONFIG"
 say "Installed config to $TARGET_CONFIG"
 
+if $APPLY_PROJECT_TRUST; then
+  if [[ -f "$PROJECT_TRUST_SNAPSHOT" ]] && grep -Eq '^\[projects\.' "$PROJECT_TRUST_SNAPSHOT"; then
+    TMP_PROJECTS="$(mktemp)"
+    cp "$PROJECT_TRUST_SNAPSHOT" "$TMP_PROJECTS"
+    escaped_home="$(printf '%s' "$HOME" | sed 's/[.[\\*^$()+?{|]/\\&/g')"
+    sed -i "s|__HOME__|$escaped_home|g" "$TMP_PROJECTS"
+    if $DRY_RUN; then
+      echo "[DRY-RUN] append project trust snapshot from '$PROJECT_TRUST_SNAPSHOT' to '$TARGET_CONFIG'"
+    else
+      {
+        echo
+        cat "$TMP_PROJECTS"
+      } >> "$TARGET_CONFIG"
+    fi
+    rm -f "$TMP_PROJECTS"
+    say "Applied project trust snapshot"
+  else
+    warn "No project trust snapshot entries to apply"
+  fi
+else
+  say "Skipping project trust snapshot (requested)"
+fi
+
 if [[ -f "$GLOBAL_AGENTS_SRC" ]]; then
   if [[ -f "$TARGET_GLOBAL_AGENTS" && ! $FORCE ]]; then
     warn "$TARGET_GLOBAL_AGENTS exists; skipping (use --force to overwrite)."
@@ -146,9 +191,19 @@ else
   warn "Global AGENTS source not found: $GLOBAL_AGENTS_SRC"
 fi
 
-if [[ -f "$RULES_FULL_SRC" ]]; then
+rules_source=""
+if [[ "$RULES_MODE" == "exact" && -f "$RULES_SOURCE_SNAPSHOT" ]]; then
+  rules_source="$RULES_SOURCE_SNAPSHOT"
+elif [[ -f "$RULES_PORTABLE_SRC" ]]; then
+  rules_source="$RULES_PORTABLE_SRC"
+  if [[ "$RULES_MODE" == "exact" ]]; then
+    warn "Exact rules snapshot not found, falling back to portable rules"
+  fi
+fi
+
+if [[ -n "$rules_source" ]]; then
   TMP_RULES="$(mktemp)"
-  cp "$RULES_FULL_SRC" "$TMP_RULES"
+  cp "$rules_source" "$TMP_RULES"
   escaped_home="$(printf '%s' "$HOME" | sed 's/[.[\\*^$()+?{|]/\\&/g')"
   sed -i "s|__HOME__|$escaped_home|g" "$TMP_RULES"
   if [[ -f "$TARGET_RULES_FILE" ]]; then
@@ -163,13 +218,19 @@ if [[ -f "$RULES_FULL_SRC" ]]; then
   if [[ -n "${TMP_RULES:-}" ]]; then
     run cp "$TMP_RULES" "$TARGET_RULES_FILE"
     rm -f "$TMP_RULES"
-    say "Installed full rules to $TARGET_RULES_FILE"
+    say "Installed $RULES_MODE rules to $TARGET_RULES_FILE"
   fi
 elif [[ -f "$RULES_TEMPLATE_SRC" && ! -f "$TARGET_RULES_FILE" ]]; then
   run cp "$RULES_TEMPLATE_SRC" "$TARGET_RULES_FILE"
   say "Installed fallback rules template to $TARGET_RULES_FILE"
 else
   warn "No rules source found in repository"
+fi
+
+if $DRY_RUN; then
+  echo "[DRY-RUN] write rules mode '$RULES_MODE' to '$RULES_MODE_FILE'"
+else
+  printf '%s\n' "$RULES_MODE" > "$RULES_MODE_FILE"
 fi
 
 if $CLEAN_SKILLS; then

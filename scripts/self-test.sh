@@ -10,10 +10,13 @@ err() { echo "[SELF-TEST][ERROR] $*"; }
 
 cd "$ROOT_DIR"
 
-for f in scripts/install.sh scripts/verify.sh scripts/codex-activate.sh scripts/export-from-local.sh scripts/bootstrap.sh scripts/audit-codex-agents.sh; do
+for f in scripts/install.sh scripts/verify.sh scripts/codex-activate.sh scripts/export-from-local.sh scripts/bootstrap.sh scripts/audit-codex-agents.sh scripts/check-toolchain.sh scripts/sync-codex-version.sh scripts/render-portable-rules.sh; do
   bash -n "$f"
 done
 say "Shell syntax: OK"
+
+scripts/check-toolchain.sh --strict-codex-only
+say "Toolchain parity check: OK"
 
 scripts/audit-codex-agents.sh
 say "Agent profile audit: OK"
@@ -66,9 +69,27 @@ if grep -q '__HOME__' "$TEST_HOME/rules/default.rules"; then
   err "Rules home placeholder replacement failed"
   exit 1
 fi
-if grep -Eq 'install-claude-local-skills\.sh|rld-better-ai-usage|git", "add", "\."|git", "push", "origin", "main"' "$TEST_HOME/rules/default.rules"; then
-  err "Installed rules contain non-portable or over-broad allow entries"
+
+if [[ ! -f "$TEST_HOME/.better-codex-rules-mode" ]]; then
+  err "Missing installed rules mode marker"
   exit 1
+fi
+rules_mode="$(cat "$TEST_HOME/.better-codex-rules-mode")"
+if [[ "$rules_mode" != "portable" && "$rules_mode" != "exact" ]]; then
+  err "Invalid installed rules mode marker: $rules_mode"
+  exit 1
+fi
+
+if [[ "$rules_mode" == "portable" ]] && grep -Eq 'install-claude-local-skills\.sh|rld-better-ai-usage|git", "add", "\."|git", "push", "origin", "main"' "$TEST_HOME/rules/default.rules"; then
+  err "Installed portable rules contain non-portable or over-broad allow entries"
+  exit 1
+fi
+
+if grep -Eq '^\[projects\.' "$ROOT_DIR/codex/config/projects.trust.snapshot.toml"; then
+  if ! grep -Eq '^\[projects\.' "$TEST_HOME/config.toml"; then
+    err "Project trust snapshot was not applied to installed config"
+    exit 1
+  fi
 fi
 
 say "Clean-room install assertions: OK"

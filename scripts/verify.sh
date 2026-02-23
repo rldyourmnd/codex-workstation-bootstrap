@@ -6,9 +6,12 @@ CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 CONFIG_FILE="$CODEX_HOME_DIR/config.toml"
 GLOBAL_AGENTS_FILE="$CODEX_HOME_DIR/AGENTS.md"
 RULES_FILE="$CODEX_HOME_DIR/rules/default.rules"
+RULES_MODE_FILE="$CODEX_HOME_DIR/.better-codex-rules-mode"
 SKILLS_DIR="$CODEX_HOME_DIR/skills"
 SKILLS_ROOT="$SKILLS_DIR"
 CUSTOM_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
+TOOLCHAIN_CHECK="$ROOT_DIR/scripts/check-toolchain.sh"
+PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
 
 REQUIRED_MCPS=(
   "context7"
@@ -61,6 +64,15 @@ err() { echo "[ERROR] $*"; }
 
 if ! command -v codex >/dev/null 2>&1; then
   err "codex CLI not found"
+  exit 1
+fi
+
+if [[ ! -x "$TOOLCHAIN_CHECK" ]]; then
+  err "Missing executable toolchain checker: $TOOLCHAIN_CHECK"
+  exit 1
+fi
+if ! "$TOOLCHAIN_CHECK" --strict-codex-only; then
+  err "Toolchain parity check failed"
   exit 1
 fi
 
@@ -134,10 +146,29 @@ else
 fi
 
 forbidden_rule_hits="$(grep -nE 'install-claude-local-skills\.sh|rld-better-ai-usage|git", "add", "\."|git", "push", "origin", "main"' "$RULES_FILE" || true)"
-if [[ -n "$forbidden_rule_hits" ]]; then
-  err "Rules contain non-portable or over-broad allow entries:"
+rules_mode="portable"
+if [[ -f "$RULES_MODE_FILE" ]]; then
+  rules_mode="$(head -n1 "$RULES_MODE_FILE" | tr -d '\r')"
+fi
+if [[ "$rules_mode" != "portable" && "$rules_mode" != "exact" ]]; then
+  err "Invalid rules mode marker in $RULES_MODE_FILE: $rules_mode"
+  exit 1
+fi
+
+if [[ "$rules_mode" == "portable" && -n "$forbidden_rule_hits" ]]; then
+  err "Rules contain non-portable or over-broad allow entries (portable mode):"
   echo "$forbidden_rule_hits"
   exit 1
+elif [[ "$rules_mode" == "exact" && -n "$forbidden_rule_hits" ]]; then
+  warn "Exact mode keeps source rules; non-portable entries detected."
+fi
+
+if [[ -f "$PROJECT_TRUST_SNAPSHOT" ]] && grep -Eq '^\[projects\.' "$PROJECT_TRUST_SNAPSHOT"; then
+  if grep -Eq '^\[projects\.' "$CONFIG_FILE"; then
+    say "Project trust entries present in installed config"
+  else
+    warn "Project trust snapshot exists but installed config has no project trust entries"
+  fi
 fi
 
 if [[ -f "$CUSTOM_MANIFEST" ]]; then

@@ -133,6 +133,13 @@ else
   warn "Rules do not include explicit gh prefix rule"
 fi
 
+forbidden_rule_hits="$(grep -nE 'install-claude-local-skills\.sh|rld-better-ai-usage|git", "add", "\."|git", "push", "origin", "main"' "$RULES_FILE" || true)"
+if [[ -n "$forbidden_rule_hits" ]]; then
+  err "Rules contain non-portable or over-broad allow entries:"
+  echo "$forbidden_rule_hits"
+  exit 1
+fi
+
 if [[ -f "$CUSTOM_MANIFEST" ]]; then
   mapfile -t REQUIRED_CUSTOM_SKILLS < <(grep -Ev '^\s*#|^\s*$' "$CUSTOM_MANIFEST" || true)
 else

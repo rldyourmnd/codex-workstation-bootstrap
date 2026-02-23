@@ -59,6 +59,9 @@ say "Running install.sh ${install_args[*]}"
 say "Running verify.sh"
 "$ROOT_DIR/scripts/verify.sh"
 
+say "Running audit-codex-agents.sh"
+"$ROOT_DIR/scripts/audit-codex-agents.sh"
+
 say "Running codex-activate.sh --check-only"
 "$ROOT_DIR/scripts/codex-activate.sh" --check-only
 

@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS_DIR="$ROOT_DIR/skills/codex-agents"
 DOCS_DIR="$ROOT_DIR/docs/agents"
+CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
+QUICK_VALIDATE="$CODEX_HOME_DIR/skills/.system/skill-creator/scripts/quick_validate.py"
 
 say() { echo "[AUDIT] $*"; }
 warn() { echo "[AUDIT][WARN] $*"; }
@@ -110,6 +112,19 @@ for profile in "${skill_profiles[@]}"; do
   fi
 
 done
+
+if [[ -f "$QUICK_VALIDATE" ]] && command -v python3 >/dev/null 2>&1; then
+  for profile in "${skill_profiles[@]}"; do
+    profile_dir="$SKILLS_DIR/$profile"
+    if ! python3 "$QUICK_VALIDATE" "$profile_dir" >/dev/null 2>&1; then
+      err "quick_validate.py failed for $profile_dir"
+      errors=$((errors + 1))
+    fi
+  done
+else
+  warn "quick_validate.py not available at $QUICK_VALIDATE; skipping OpenAI skill-creator validation"
+  warnings=$((warnings + 1))
+fi
 
 forbidden_hits="$(rg -n "codex exec|gemini-cli|\bgemini\b" "$SKILLS_DIR" "$DOCS_DIR" -i || true)"
 if [[ -n "$forbidden_hits" ]]; then

@@ -66,6 +66,10 @@ if grep -q '__HOME__' "$TEST_HOME/rules/default.rules"; then
   err "Rules home placeholder replacement failed"
   exit 1
 fi
+if grep -Eq 'install-claude-local-skills\.sh|rld-better-ai-usage|git", "add", "\."|git", "push", "origin", "main"' "$TEST_HOME/rules/default.rules"; then
+  err "Installed rules contain non-portable or over-broad allow entries"
+  exit 1
+fi
 
 say "Clean-room install assertions: OK"
 say "Self-test passed"

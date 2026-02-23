@@ -17,6 +17,7 @@ if ! command -v codex >/dev/null 2>&1; then
 fi
 
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
+CONFIG_FILE="$CODEX_HOME_DIR/config.toml"
 SKILLS_DIR="$CODEX_HOME_DIR/skills"
 
 REQUIRED_MCPS=(
@@ -105,10 +106,18 @@ done
 MCP_LIST_AFTER="$(codex mcp list || true)"
 MCP_LIST_AFTER_CLEAN="$(printf '%s\n' "$MCP_LIST_AFTER" | tr -d '\r' | sed -E 's/\x1B\\[[0-9;]*[[:alpha:]]//g')"
 if grep -Eiq "context7.*not logged in" <<<"$MCP_LIST_AFTER_CLEAN"; then
-  warn "context7 MCP is enabled but not logged in (check CONTEXT7_API_KEY)"
+  if [[ -f "$CONFIG_FILE" ]] && grep -Eq '^CONTEXT7_API_KEY = "[^"]+"' "$CONFIG_FILE" && ! grep -q '__CONTEXT7_API_KEY__' "$CONFIG_FILE"; then
+    say "context7 reports not logged in, but token header is configured in config.toml (can be expected with token-based auth)."
+  else
+    warn "context7 MCP is enabled but not logged in (check CONTEXT7_API_KEY)"
+  fi
 fi
 if grep -Eiq "github.*not logged in" <<<"$MCP_LIST_AFTER_CLEAN"; then
-  warn "github MCP is enabled but not logged in (check token/header in Codex config)"
+  if [[ -f "$CONFIG_FILE" ]] && grep -Eq '^Authorization = "Bearer [^"]+"' "$CONFIG_FILE" && ! grep -q '__GITHUB_MCP_TOKEN__' "$CONFIG_FILE"; then
+    say "github reports not logged in, but bearer header is configured in config.toml (can be expected with token-based auth)."
+  else
+    warn "github MCP is enabled but not logged in (check token/header in Codex config)"
+  fi
 fi
 
 say "Validating required skills in $SKILLS_DIR"

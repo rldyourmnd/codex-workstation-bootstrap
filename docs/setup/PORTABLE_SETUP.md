@@ -12,6 +12,7 @@ The snapshot intentionally includes only reproducible settings:
 - All non-system installed skills (`~/.codex/skills/*`, excluding `.system`)
 
 The snapshot intentionally excludes runtime/session files such as auth/session/history/log files.
+Export also redacts secret-like values in `config.toml` and keeps only a portable baseline in `default.rules`.
 
 ## Export from source machine
 
@@ -50,6 +51,7 @@ scripts/bootstrap.sh --skip-curated
 
 ```bash
 scripts/verify.sh
+scripts/audit-codex-agents.sh
 scripts/codex-activate.sh --check-only
 ```
 

@@ -24,6 +24,7 @@ This repository captures your local Codex setup and restores it on another machi
 ## Security
 
 Secrets are not committed to git.
+Export additionally redacts generic secret-like config keys (`*KEY*`, `*TOKEN*`, `*SECRET*`, `*PASSWORD*`), while preserving install placeholders for Context7 and GitHub MCP.
 
 Provide at install time:
 
@@ -82,6 +83,6 @@ scripts/install.sh --dry-run --force --skip-curated --clean-skills
 
 ```bash
 scripts/verify.sh
-scripts/codex-activate.sh --check-only
 scripts/audit-codex-agents.sh
+scripts/codex-activate.sh --check-only
 ```

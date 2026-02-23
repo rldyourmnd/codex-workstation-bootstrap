@@ -57,9 +57,11 @@ err() { echo "[ERROR] $*"; }
 
 run() {
   if $DRY_RUN; then
-    echo "[DRY-RUN] $*"
+    printf "[DRY-RUN]"
+    printf " %q" "$@"
+    printf "\n"
   else
-    eval "$@"
+    "$@"
   fi
 }
 
@@ -75,7 +77,7 @@ backup_if_exists() {
   local target="$1"
   if [[ -f "$target" ]]; then
     local backup="$target.bak.$(date +%Y%m%d_%H%M%S)"
-    run "cp '$target' '$backup'"
+    run cp "$target" "$backup"
     say "Backed up: $target -> $backup"
   fi
 }
@@ -126,7 +128,7 @@ sed -i \
   -e "s|__GITHUB_MCP_TOKEN__|$safe_gh|g" \
   "$TMP_CONFIG"
 
-run "cp '$TMP_CONFIG' '$TARGET_CONFIG'"
+run cp "$TMP_CONFIG" "$TARGET_CONFIG"
 rm -f "$TMP_CONFIG"
 say "Installed config to $TARGET_CONFIG"
 
@@ -137,7 +139,7 @@ if [[ -f "$GLOBAL_AGENTS_SRC" ]]; then
     if [[ -f "$TARGET_GLOBAL_AGENTS" ]]; then
       backup_if_exists "$TARGET_GLOBAL_AGENTS"
     fi
-    run "cp '$GLOBAL_AGENTS_SRC' '$TARGET_GLOBAL_AGENTS'"
+    run cp "$GLOBAL_AGENTS_SRC" "$TARGET_GLOBAL_AGENTS"
     say "Installed global AGENTS to $TARGET_GLOBAL_AGENTS"
   fi
 else
@@ -159,12 +161,12 @@ if [[ -f "$RULES_FULL_SRC" ]]; then
     fi
   fi
   if [[ -n "${TMP_RULES:-}" ]]; then
-    run "cp '$TMP_RULES' '$TARGET_RULES_FILE'"
+    run cp "$TMP_RULES" "$TARGET_RULES_FILE"
     rm -f "$TMP_RULES"
     say "Installed full rules to $TARGET_RULES_FILE"
   fi
 elif [[ -f "$RULES_TEMPLATE_SRC" && ! -f "$TARGET_RULES_FILE" ]]; then
-  run "cp '$RULES_TEMPLATE_SRC' '$TARGET_RULES_FILE'"
+  run cp "$RULES_TEMPLATE_SRC" "$TARGET_RULES_FILE"
   say "Installed fallback rules template to $TARGET_RULES_FILE"
 else
   warn "No rules source found in repository"
@@ -183,11 +185,6 @@ if [[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]]; then
   TMP_ARCHIVE="$(mktemp --suffix=.tar.gz)"
   TMP_EXTRACT_DIR="$(mktemp -d)"
 
-  verify_archive_cmd="true"
-  if [[ -f "$CUSTOM_SKILLS_SHA256" ]] && command -v sha256sum >/dev/null 2>&1; then
-    verify_archive_cmd="echo \"$(cat "$CUSTOM_SKILLS_SHA256")  $TMP_ARCHIVE\" | sha256sum -c -"
-  fi
-
   if $DRY_RUN; then
     echo "[DRY-RUN] base64 -d '$CUSTOM_SKILLS_ARCHIVE_B64' > '$TMP_ARCHIVE'"
     if [[ -f "$CUSTOM_SKILLS_SHA256" ]]; then
@@ -197,12 +194,16 @@ if [[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]]; then
     echo "[DRY-RUN] rsync extracted skills to '$TARGET_SKILLS_DIR/'"
   else
     base64 -d "$CUSTOM_SKILLS_ARCHIVE_B64" > "$TMP_ARCHIVE"
-    eval "$verify_archive_cmd" >/dev/null || {
-      err "Custom skills archive checksum verification failed"
-      rm -f "$TMP_ARCHIVE"
-      rm -rf "$TMP_EXTRACT_DIR"
-      exit 1
-    }
+    if [[ -f "$CUSTOM_SKILLS_SHA256" ]] && command -v sha256sum >/dev/null 2>&1; then
+      expected_sha="$(cat "$CUSTOM_SKILLS_SHA256")"
+      actual_sha="$(sha256sum "$TMP_ARCHIVE" | awk '{print $1}')"
+      if [[ "$actual_sha" != "$expected_sha" ]]; then
+        err "Custom skills archive checksum verification failed"
+        rm -f "$TMP_ARCHIVE"
+        rm -rf "$TMP_EXTRACT_DIR"
+        exit 1
+      fi
+    fi
     tar -xzf "$TMP_ARCHIVE" -C "$TMP_EXTRACT_DIR"
     if [[ -d "$TMP_EXTRACT_DIR/custom" ]]; then
       rsync -a "$TMP_EXTRACT_DIR/custom/" "$TARGET_SKILLS_DIR/"
@@ -215,7 +216,7 @@ if [[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]]; then
   rm -rf "$TMP_EXTRACT_DIR"
   say "Custom skills archive extracted to $TARGET_SKILLS_DIR"
 elif [[ -d "$CUSTOM_SKILLS_SRC" ]]; then
-  run "rsync -a '$CUSTOM_SKILLS_SRC/' '$TARGET_SKILLS_DIR/'"
+  run rsync -a "$CUSTOM_SKILLS_SRC/" "$TARGET_SKILLS_DIR/"
   say "Custom skills synced to $TARGET_SKILLS_DIR"
 else
   warn "No custom skills source found in repository"

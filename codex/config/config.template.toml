@@ -1,5 +1,5 @@
 model = "gpt-5.3-codex"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 personality = "pragmatic"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
@@ -40,3 +40,4 @@ Authorization = "Bearer __GITHUB_MCP_TOKEN__"
 
 [notice]
 hide_full_access_warning = true
+hide_rate_limit_model_nudge = true

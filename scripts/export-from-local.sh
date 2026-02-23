@@ -60,6 +60,12 @@ mkdir -p "$ROOT_DIR/codex/agents" "$ROOT_DIR/codex/rules" "$ROOT_DIR/codex/skill
 cp "$SOURCE_CONFIG" "$DEST_CONFIG_TEMPLATE"
 
 # Sanitize secrets for portable template.
+# 1) Generic redaction for key/value settings that look secret-like.
+sed -i -E \
+  -e 's#^([[:space:]]*[A-Za-z0-9_]*(KEY|TOKEN|SECRET|PASSWORD)[A-Za-z0-9_]*[[:space:]]*=[[:space:]]*").*(".*)$#\1__REDACTED__\3#' \
+  "$DEST_CONFIG_TEMPLATE"
+
+# 2) Stable placeholders used by install.sh.
 sed -i \
   -e 's|CONTEXT7_API_KEY = ".*"|CONTEXT7_API_KEY = "__CONTEXT7_API_KEY__"|g' \
   -e 's|Authorization = "Bearer .*"|Authorization = "Bearer __GITHUB_MCP_TOKEN__"|g' \
@@ -87,9 +93,25 @@ if [[ -f "$SOURCE_RULES" ]]; then
   source_home="$(dirname "$SOURCE_CODEX_HOME")"
   escaped_source_home="$(printf '%s' "$source_home" | sed 's/[.[\\*^$()+?{|]/\\&/g')"
   sed -i "s|$escaped_source_home|__HOME__|g" "$DEST_RULES"
+  cat > "$DEST_RULES" <<'RULES'
+prefix_rule(pattern=["python3", "__HOME__/.codex/skills/.system/skill-installer/scripts/list-skills.py", "--format", "json"], decision="allow")
+prefix_rule(pattern=["python3", "__HOME__/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py", "--repo", "openai/skills", "--path", "skills/.curated/cloudflare-deploy", "skills/.curated/figma-implement-design", "skills/.curated/gh-address-comments", "skills/.curated/pdf", "skills/.curated/security-best-practices", "skills/.curated/security-ownership-map", "skills/.curated/security-threat-model", "skills/.curated/spreadsheet", "skills/.curated/yeet"], decision="allow")
+prefix_rule(pattern=["codex", "mcp"], decision="allow")
+prefix_rule(pattern=["set", "-e"], decision="allow")
+prefix_rule(pattern=["gh"], decision="allow", justification="Run GitHub CLI unsandboxed for reliable auth and repository access.")
+RULES
   say "Updated: $DEST_RULES"
 else
   err "Missing source rules: $SOURCE_RULES"
+  exit 1
+fi
+
+if grep -Eq 'Bearer [A-Za-z0-9]' "$DEST_CONFIG_TEMPLATE"; then
+  err "Unsafe bearer token detected after sanitization in $DEST_CONFIG_TEMPLATE"
+  exit 1
+fi
+if grep -Eq '(ctx7sk-|ghp_|gho_|github_pat_|sk-[A-Za-z0-9])' "$DEST_CONFIG_TEMPLATE"; then
+  err "Unsafe API token-like value detected after sanitization in $DEST_CONFIG_TEMPLATE"
   exit 1
 fi
 

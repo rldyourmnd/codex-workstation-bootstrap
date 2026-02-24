@@ -23,6 +23,7 @@ CUSTOM_SKILLS_ARCHIVE_B64="$ROOT_DIR/codex/skills/custom-skills.tar.gz.b64"
 CUSTOM_SKILLS_SHA256="$ROOT_DIR/codex/skills/custom-skills.sha256"
 CUSTOM_SKILLS_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
 CURATED_MANIFEST="$ROOT_DIR/codex/skills/curated-manifest.txt"
+AGENT_SKILLS_SRC="$ROOT_DIR/skills/codex-agents"
 SKILL_INSTALLER="$CODEX_HOME_DIR/skills/.system/skill-installer/scripts/install-skill-from-github.py"
 PLATFORM_ID="$(platform_id)"
 OS_SNAPSHOT_DIR="$ROOT_DIR/codex/os/$PLATFORM_ID"
@@ -97,6 +98,11 @@ run() {
   else
     "$@"
   fi
+}
+
+is_nonempty_text_file() {
+  local file="$1"
+  [[ -f "$file" ]] && grep -q '[^[:space:]]' "$file"
 }
 
 require_tool() {
@@ -259,6 +265,11 @@ else
 fi
 
 if [[ -f "$GLOBAL_AGENTS_SRC" ]]; then
+  if ! is_nonempty_text_file "$GLOBAL_AGENTS_SRC"; then
+    err "Global AGENTS source is empty: $GLOBAL_AGENTS_SRC"
+    err "Refusing to install empty AGENTS.md"
+    exit 1
+  fi
   if [[ -f "$TARGET_GLOBAL_AGENTS" && ! $FORCE ]]; then
     warn "$TARGET_GLOBAL_AGENTS exists; skipping (use --force to overwrite)."
   else
@@ -267,6 +278,10 @@ if [[ -f "$GLOBAL_AGENTS_SRC" ]]; then
     fi
     run cp "$GLOBAL_AGENTS_SRC" "$TARGET_GLOBAL_AGENTS"
     say "Installed global AGENTS to $TARGET_GLOBAL_AGENTS"
+    if ! is_nonempty_text_file "$TARGET_GLOBAL_AGENTS"; then
+      err "Installed AGENTS is empty: $TARGET_GLOBAL_AGENTS"
+      exit 1
+    fi
   fi
 else
   warn "Global AGENTS source not found: $GLOBAL_AGENTS_SRC"
@@ -323,6 +338,28 @@ if $CLEAN_SKILLS; then
   say "Cleaned existing non-system skills"
 fi
 
+if [[ -d "$AGENT_SKILLS_SRC" ]]; then
+  baseline_skills=()
+  while IFS= read -r line; do
+    baseline_skills+=("$line")
+  done < <(list_top_level_dirs "$AGENT_SKILLS_SRC")
+
+  if [[ ${#baseline_skills[@]} -eq 0 ]]; then
+    warn "No repository agent skills found in $AGENT_SKILLS_SRC"
+  else
+    for skill in "${baseline_skills[@]}"; do
+      if [[ ! -f "$AGENT_SKILLS_SRC/$skill/SKILL.md" ]]; then
+        err "Repository agent skill missing SKILL.md: $AGENT_SKILLS_SRC/$skill"
+        exit 1
+      fi
+      run rsync -a "$AGENT_SKILLS_SRC/$skill/" "$TARGET_SKILLS_DIR/$skill/"
+    done
+    say "Installed repository agent baseline skills (${#baseline_skills[@]})"
+  fi
+else
+  warn "Repository agent skills directory not found: $AGENT_SKILLS_SRC"
+fi
+
 if [[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]]; then
   TMP_ARCHIVE="$(mktemp_with_suffix .tar.gz)"
   TMP_EXTRACT_DIR="$(mktemp -d)"
@@ -347,6 +384,7 @@ if [[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]]; then
       fi
     fi
     tar -xzf "$TMP_ARCHIVE" -C "$TMP_EXTRACT_DIR"
+    find "$TMP_EXTRACT_DIR" -type f -name '._*' -delete
     if [[ -d "$TMP_EXTRACT_DIR/custom" ]]; then
       rsync -a "$TMP_EXTRACT_DIR/custom/" "$TARGET_SKILLS_DIR/"
     else
@@ -369,17 +407,24 @@ if [[ -f "$CUSTOM_SKILLS_MANIFEST" ]]; then
   while IFS= read -r line; do
     expected_custom+=("$line")
   done < <(read_nonempty_lines "$CUSTOM_SKILLS_MANIFEST")
-  if [[ ${#expected_custom[@]} -gt 0 ]]; then
-    missing_custom=0
-    for skill in "${expected_custom[@]}"; do
-      if [[ ! -f "$TARGET_SKILLS_DIR/$skill/SKILL.md" ]]; then
-        warn "Expected skill not found after install: $skill"
-        missing_custom=$((missing_custom + 1))
-      fi
-    done
-    if [[ $missing_custom -eq 0 ]]; then
-      say "Installed all skills from snapshot manifest (${#expected_custom[@]})"
+  if [[ ${#expected_custom[@]} -eq 0 ]]; then
+    err "Snapshot manifest has no skills: $CUSTOM_SKILLS_MANIFEST"
+    err "Run scripts/export-from-local.sh on source machine to rebuild snapshot."
+    exit 1
+  fi
+
+  missing_custom=0
+  for skill in "${expected_custom[@]}"; do
+    if [[ ! -f "$TARGET_SKILLS_DIR/$skill/SKILL.md" ]]; then
+      warn "Expected skill not found after install: $skill"
+      missing_custom=$((missing_custom + 1))
     fi
+  done
+  if [[ $missing_custom -eq 0 ]]; then
+    say "Installed all skills from snapshot manifest (${#expected_custom[@]})"
+  else
+    err "Missing $missing_custom skill(s) from snapshot manifest"
+    exit 1
   fi
 fi
 

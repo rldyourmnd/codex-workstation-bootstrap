@@ -49,6 +49,10 @@ if [[ ! -f "$TEST_HOME/AGENTS.md" ]]; then
   err "Missing global AGENTS.md"
   exit 1
 fi
+if ! grep -q '[^[:space:]]' "$TEST_HOME/AGENTS.md"; then
+  err "Installed AGENTS.md is empty"
+  exit 1
+fi
 if [[ ! -f "$TEST_HOME/rules/default.rules" ]]; then
   err "Missing installed rules file"
   exit 1
@@ -65,15 +69,27 @@ while IFS= read -r line; do
 done < <(read_nonempty_lines "$MANIFEST_FILE")
 
 if [[ ${#required_skills[@]} -eq 0 ]]; then
-  warn "Skills manifest is empty; skipping snapshot skill presence assertions"
-else
-  for skill in "${required_skills[@]}"; do
-    if [[ ! -f "$TEST_HOME/skills/$skill/SKILL.md" ]]; then
-      err "Missing installed skill: $skill"
-      exit 1
-    fi
-  done
+  err "Skills manifest is empty: $MANIFEST_FILE"
+  exit 1
 fi
+for skill in "${required_skills[@]}"; do
+  if [[ ! -f "$TEST_HOME/skills/$skill/SKILL.md" ]]; then
+    err "Missing installed skill: $skill"
+    exit 1
+  fi
+done
+
+repo_agent_skills=()
+while IFS= read -r line; do
+  repo_agent_skills+=("$line")
+done < <(list_top_level_dirs "$ROOT_DIR/skills/codex-agents")
+
+for skill in "${repo_agent_skills[@]}"; do
+  if [[ ! -f "$TEST_HOME/skills/$skill/SKILL.md" ]]; then
+    err "Missing installed repository agent skill: $skill"
+    exit 1
+  fi
+done
 
 if grep -q '__CONTEXT7_API_KEY__' "$ROOT_DIR/codex/config/config.template.toml"; then
   if ! grep -Eq 'CONTEXT7_API_KEY = "ctx7sk-selftest"|"x-context7-api-key" = "ctx7sk-selftest"' "$TEST_HOME/config.toml"; then

@@ -30,6 +30,7 @@ SKILLS_ROOT="$SKILLS_DIR"
 CUSTOM_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
 TOOLCHAIN_CHECK="$ROOT_DIR/scripts/check-toolchain.sh"
 PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
+AGENT_BASELINE_DIR="$ROOT_DIR/skills/codex-agents"
 
 REQUIRED_MCPS=(
   "context7"
@@ -102,6 +103,10 @@ if [[ ! -f "$GLOBAL_AGENTS_FILE" ]]; then
   err "Global AGENTS not found: $GLOBAL_AGENTS_FILE"
   exit 1
 fi
+if ! grep -q '[^[:space:]]' "$GLOBAL_AGENTS_FILE"; then
+  err "Global AGENTS is empty: $GLOBAL_AGENTS_FILE"
+  exit 1
+fi
 if [[ ! -f "$RULES_FILE" ]]; then
   err "Rules file not found: $RULES_FILE"
   exit 1
@@ -159,7 +164,8 @@ else
 fi
 
 if ! grep -Eiq 'think step by step' "$GLOBAL_AGENTS_FILE"; then
-  warn "Global AGENTS does not include expected baseline phrase: 'think step by step'"
+  err "Global AGENTS does not include expected baseline phrase: 'think step by step'"
+  exit 1
 else
   say "Global AGENTS baseline phrase found"
 fi
@@ -207,6 +213,10 @@ if [[ -f "$CUSTOM_MANIFEST" ]]; then
   while IFS= read -r line; do
     REQUIRED_CUSTOM_SKILLS+=("$line")
   done < <(read_nonempty_lines "$CUSTOM_MANIFEST")
+  if [[ ${#REQUIRED_CUSTOM_SKILLS[@]} -eq 0 ]]; then
+    err "Snapshot skills manifest is empty: $CUSTOM_MANIFEST"
+    exit 1
+  fi
 else
   REQUIRED_CUSTOM_SKILLS=("${DEFAULT_REQUIRED_CUSTOM_SKILLS[@]}")
 fi
@@ -238,6 +248,21 @@ for skill in "${REQUIRED_CUSTOM_SKILLS[@]}"; do
   fi
   say "Custom skill OK: $skill"
 done
+
+if [[ -d "$AGENT_BASELINE_DIR" ]]; then
+  REPO_AGENT_SKILLS=()
+  while IFS= read -r line; do
+    REPO_AGENT_SKILLS+=("$line")
+  done < <(list_top_level_dirs "$AGENT_BASELINE_DIR")
+
+  for skill in "${REPO_AGENT_SKILLS[@]}"; do
+    if [[ ! -f "$SKILLS_ROOT/$skill/SKILL.md" ]]; then
+      err "Missing repository agent baseline skill: $skill"
+      exit 1
+    fi
+  done
+  say "Verified repository agent baseline skills: ${#REPO_AGENT_SKILLS[@]}"
+fi
 
 say "Verified custom skills: ${#REQUIRED_CUSTOM_SKILLS[@]}"
 say "Verification passed"

@@ -14,9 +14,10 @@ The snapshot intentionally includes only reproducible settings:
 - All non-system installed skills (`~/.codex/skills/*`, excluding `.system`)
 - Toolchain lock (`codex/meta/toolchain.lock`)
 - Optional project trust snapshot (`codex/config/projects.trust.snapshot.toml`)
+- Optional full OS-specific `~/.codex` snapshot (`codex/os/<os>/full-codex-home.*`)
 
-The snapshot intentionally excludes runtime/session files such as auth/session/history/log files.
-Export also redacts secret-like values in `config.toml` and keeps only a portable baseline in `default.rules`.
+Default export intentionally excludes runtime/session files (auth/session/history/log).
+Use `--with-full-home` if you need an absolute mirror, including runtime/session state.
 
 ## Export from source machine
 
@@ -31,9 +32,29 @@ Optional custom source path:
 scripts/export-from-local.sh /path/to/.codex
 ```
 
+Absolute mirror export:
+
+```bash
+scripts/export-from-local.sh --with-full-home
+```
+
 ## Restore on target machine
 
-Set required environment variables:
+Install Codex first:
+
+macOS:
+
+```bash
+brew install --cask codex
+```
+
+Linux:
+
+```bash
+npm i -g @openai/codex
+```
+
+Set required environment variables (for deterministic template mode):
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
@@ -54,6 +75,12 @@ Portable-safe variant:
 scripts/bootstrap.sh --skip-curated --portable-rules --skip-project-trust --no-sync-codex-version --no-strict-toolchain
 ```
 
+Absolute mirror restore (same OS family as snapshot):
+
+```bash
+scripts/bootstrap.sh --skip-curated --full-home
+```
+
 ## Deterministic vs latest restore
 
 - Deterministic restore: `scripts/bootstrap.sh --skip-curated`
@@ -68,9 +95,16 @@ scripts/audit-codex-agents.sh
 scripts/codex-activate.sh --check-only
 ```
 
+For absolute mirror mode:
+
+```bash
+scripts/verify.sh --full-home
+```
+
 ## Troubleshooting
 
 - If `verify.sh` reports missing MCP auth, check env vars and `~/.codex/config.toml`.
+- In full-home mode, `verify.sh --full-home` reports missing MCP entries as warnings (not hard failures).
 - If `codex mcp list` is unavailable, install/upgrade Codex CLI first.
 - If curated install fails, rerun with `--skip-curated`.
 - If Codex version mismatch is reported, run `scripts/sync-codex-version.sh --apply`.

@@ -13,6 +13,9 @@ This repository captures your local Codex setup and restores it on another machi
 - `codex/skills/custom-skills.sha256`: integrity checksum for packed skills
 - `codex/skills/custom-skills.manifest.txt`: exact skill list from snapshot
 - `codex/skills/curated-manifest.txt`: optional curated skill refresh list
+- `codex/os/<os>/full-codex-home.tar.gz.b64`: optional full `~/.codex` snapshot per OS
+- `codex/os/<os>/full-codex-home.sha256`: checksum for full snapshot
+- `codex/os/<os>/full-codex-home.manifest.txt`: manifest for full snapshot
 - `codex/meta/toolchain.lock`: exported versions (`codex/node/npm/python/uv/gh`)
 - `codex/config/projects.trust.snapshot.toml`: optional exported `[projects.*]` trust entries
 - `codex/rules/default.rules.source.snapshot`: exported source-machine rules snapshot
@@ -26,16 +29,21 @@ This repository captures your local Codex setup and restores it on another machi
 - `scripts/audit-codex-agents.sh`: validate codex-agent profile consistency
 - `scripts/bootstrap.sh`: one-command install + verify + activation check
 - `scripts/self-test.sh`: clean-room smoke test of the transfer flow
+- `scripts/os/common/platform.sh`: shared cross-platform shell helpers
+- `scripts/os/macos/ensure-codex.sh`: macOS bootstrap (`brew install --cask codex`)
+- `scripts/os/linux/ensure-codex.sh`: Linux bootstrap (`npm i -g @openai/codex`)
 
 ## Security
 
-Secrets are not committed to git.
-Export additionally redacts generic secret-like config keys (`*KEY*`, `*TOKEN*`, `*SECRET*`, `*PASSWORD*`), while preserving install placeholders for Context7 and GitHub MCP.
+Secrets are not committed to git in default export mode.
+Export redacts generic secret-like config keys (`*KEY*`, `*TOKEN*`, `*SECRET*`, `*PASSWORD*`), while preserving install placeholders for Context7 and GitHub MCP.
 
 Provide at install time:
 
 - `CONTEXT7_API_KEY`
 - `GITHUB_MCP_TOKEN`
+
+If you use `--with-full-home`, the snapshot includes runtime/session data and secret values from `~/.codex`.
 
 ## Source machine: refresh snapshot
 
@@ -50,9 +58,23 @@ Optional source path:
 scripts/export-from-local.sh /path/to/.codex
 ```
 
+Absolute mirror (includes full `~/.codex`):
+
+```bash
+scripts/export-from-local.sh --with-full-home
+```
+
 ## Target machine: restore full state
 
 1. Install Codex CLI:
+
+macOS:
+
+```bash
+brew install --cask codex
+```
+
+Linux:
 
 ```bash
 npm i -g @openai/codex
@@ -77,6 +99,12 @@ scripts/bootstrap.sh --skip-curated
 
 If you want an additional curated refresh from `openai/skills`, run without `--skip-curated`.
 Operational runbook: `docs/setup/PROD_RUNBOOK.md`.
+
+Absolute mirror restore (full `~/.codex` snapshot, same OS family):
+
+```bash
+scripts/bootstrap.sh --skip-curated --full-home
+```
 
 ## Parity modes
 
@@ -107,6 +135,12 @@ scripts/check-toolchain.sh --strict-codex-only
 scripts/verify.sh
 scripts/audit-codex-agents.sh
 scripts/codex-activate.sh --check-only
+```
+
+- Verify full-home restore:
+
+```bash
+scripts/verify.sh --full-home
 ```
 
 - Pin Codex version from lock:

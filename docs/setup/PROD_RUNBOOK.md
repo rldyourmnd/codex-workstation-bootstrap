@@ -12,6 +12,7 @@ scripts/self-test.sh
 ```
 
 Expected result: all commands succeed.
+Export now hard-fails on empty source `AGENTS.md` or empty non-system skills snapshot to prevent drift/corruption.
 
 Absolute mirror variant:
 
@@ -27,6 +28,10 @@ export CONTEXT7_API_KEY='ctx7sk-...'
 export GITHUB_MCP_TOKEN="$(gh auth token)"
 scripts/bootstrap.sh --skip-curated
 ```
+
+Restore guarantees:
+- installs repository baseline 9 agent skills (`skills/codex-agents`),
+- installs full snapshot skill set from `codex/skills/custom-skills.*`.
 
 Codex install by OS:
 

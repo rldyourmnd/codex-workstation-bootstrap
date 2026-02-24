@@ -12,6 +12,7 @@ The snapshot intentionally includes only reproducible settings:
   - portable baseline (`codex/rules/default.rules`)
   - source snapshot (`codex/rules/default.rules.source.snapshot`)
 - All non-system installed skills (`~/.codex/skills/*`, excluding `.system`)
+- Repository baseline agent skills (`skills/codex-agents/*`) are always installed on target
 - Toolchain lock (`codex/meta/toolchain.lock`)
 - Optional project trust snapshot (`codex/config/projects.trust.snapshot.toml`)
 - Optional full OS-specific `~/.codex` snapshot (`codex/os/<os>/full-codex-home.*`)
@@ -37,6 +38,12 @@ Absolute mirror export:
 ```bash
 scripts/export-from-local.sh --with-full-home
 ```
+
+Guardrails:
+
+- Export fails if source `AGENTS.md` is empty.
+- Export fails if no non-system skills are found.
+- Override only when intentional: `--allow-empty-agents` / `--allow-empty-skills`.
 
 ## Restore on target machine
 
@@ -66,6 +73,10 @@ Run one-command restore:
 ```bash
 scripts/bootstrap.sh --skip-curated
 ```
+
+Install applies both:
+- snapshot skills from `codex/skills/custom-skills.*`,
+- repository baseline 9 agent skills from `skills/codex-agents`.
 
 Exact parity is default in bootstrap (rules mode `exact`, project trust apply enabled, Codex version sync enabled, toolchain parity check enabled).
 

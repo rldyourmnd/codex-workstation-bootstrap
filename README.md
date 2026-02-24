@@ -13,6 +13,7 @@ This repository captures your local Codex setup and restores it on another machi
 - `codex/skills/custom-skills.sha256`: integrity checksum for packed skills
 - `codex/skills/custom-skills.manifest.txt`: exact skill list from snapshot
 - `codex/skills/curated-manifest.txt`: optional curated skill refresh list
+- `skills/codex-agents/*`: repository-owned baseline of your 9 agent profiles
 - `codex/os/<os>/full-codex-home.tar.gz.b64`: optional full `~/.codex` snapshot per OS
 - `codex/os/<os>/full-codex-home.sha256`: checksum for full snapshot
 - `codex/os/<os>/full-codex-home.manifest.txt`: manifest for full snapshot
@@ -64,6 +65,15 @@ Absolute mirror (includes full `~/.codex`):
 scripts/export-from-local.sh --with-full-home
 ```
 
+Safety overrides (use only intentionally):
+
+```bash
+scripts/export-from-local.sh --allow-empty-agents
+scripts/export-from-local.sh --allow-empty-skills
+```
+
+By default export now fails if source `~/.codex/AGENTS.md` is empty or if no non-system skills are found, to prevent accidental snapshot corruption.
+
 ## Target machine: restore full state
 
 1. Install Codex CLI:
@@ -96,6 +106,7 @@ scripts/bootstrap.sh --skip-curated
 ```
 
 `--skip-curated` keeps restore deterministic from the committed snapshot.
+Install now always applies repository baseline agent skills from `skills/codex-agents` plus the full snapshot in `codex/skills/custom-skills.*`.
 
 If you want an additional curated refresh from `openai/skills`, run without `--skip-curated`.
 Operational runbook: `docs/setup/PROD_RUNBOOK.md`.

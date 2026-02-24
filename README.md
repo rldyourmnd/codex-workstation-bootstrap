@@ -4,6 +4,12 @@ Production-ready, portable Codex environment mirror.
 
 This repository captures your local Codex setup and restores it on another machine in a few commands.
 
+## OS-first layout
+
+- `scripts/os/<os>/install/*`: platform installers (`codex`, optional `claude-code`)
+- `codex/os/<os>/snapshots/full-home/*`: optional full-home snapshots per OS
+- `docs/setup/os/*`: per-OS operator guides
+
 ## What is mirrored
 
 - `codex/config/config.template.toml`: sanitized global Codex config template
@@ -14,9 +20,9 @@ This repository captures your local Codex setup and restores it on another machi
 - `codex/skills/custom-skills.manifest.txt`: exact skill list from snapshot
 - `codex/skills/curated-manifest.txt`: optional curated skill refresh list
 - `skills/codex-agents/*`: repository-owned baseline of your 9 agent profiles
-- `codex/os/<os>/full-codex-home.tar.gz.b64`: optional full `~/.codex` snapshot per OS
-- `codex/os/<os>/full-codex-home.sha256`: checksum for full snapshot
-- `codex/os/<os>/full-codex-home.manifest.txt`: manifest for full snapshot
+- `codex/os/<os>/snapshots/full-home/archive.tar.gz.b64`: optional full `~/.codex` snapshot per OS
+- `codex/os/<os>/snapshots/full-home/archive.sha256`: checksum for full snapshot
+- `codex/os/<os>/snapshots/full-home/manifest.txt`: manifest for full snapshot
 - `codex/meta/toolchain.lock`: exported versions (`codex/node/npm/python/uv/gh`)
 - `codex/config/projects.trust.snapshot.toml`: optional exported `[projects.*]` trust entries
 - `codex/rules/default.rules.source.snapshot`: exported source-machine rules snapshot
@@ -31,8 +37,12 @@ This repository captures your local Codex setup and restores it on another machi
 - `scripts/bootstrap.sh`: one-command install + verify + activation check
 - `scripts/self-test.sh`: clean-room smoke test of the transfer flow
 - `scripts/os/common/platform.sh`: shared cross-platform shell helpers
-- `scripts/os/macos/ensure-codex.sh`: macOS bootstrap (`brew install --cask codex`)
-- `scripts/os/linux/ensure-codex.sh`: Linux bootstrap (`npm i -g @openai/codex`)
+- `scripts/os/macos/install/ensure-codex.sh`: macOS Codex bootstrap (`brew install --cask codex`)
+- `scripts/os/linux/install/ensure-codex.sh`: Ubuntu/Linux Codex bootstrap (`npm i -g @openai/codex`)
+- `scripts/os/windows/install/ensure-codex.ps1`: Windows Codex skeleton (PowerShell)
+- `scripts/os/macos/install/ensure-claude-code.sh`: macOS Claude Code bootstrap
+- `scripts/os/linux/install/ensure-claude-code.sh`: Ubuntu/Linux Claude Code bootstrap
+- `scripts/os/windows/install/ensure-claude-code.ps1`: Windows Claude Code skeleton (PowerShell)
 
 ## Security
 
@@ -105,6 +115,12 @@ export GITHUB_MCP_TOKEN="$(gh auth token)"
 scripts/bootstrap.sh --skip-curated
 ```
 
+Optional: include Claude Code install in the same run:
+
+```bash
+scripts/bootstrap.sh --skip-curated --with-claude-code
+```
+
 `--skip-curated` keeps restore deterministic from the committed snapshot.
 Install now always applies repository baseline agent skills from `skills/codex-agents` plus the full snapshot in `codex/skills/custom-skills.*`.
 
@@ -116,6 +132,10 @@ Absolute mirror restore (full `~/.codex` snapshot, same OS family):
 ```bash
 scripts/bootstrap.sh --skip-curated --full-home
 ```
+
+Windows skeleton:
+- Codex and Claude Code PowerShell installers are under `scripts/os/windows/install/`.
+- Full automation for Windows is intentionally staged as skeleton-first; primary production path is macOS and Ubuntu/Linux.
 
 ## Parity modes
 

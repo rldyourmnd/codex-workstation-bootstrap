@@ -53,6 +53,12 @@ Full-home restore (absolute mirror, same OS family):
 scripts/bootstrap.sh --skip-curated --full-home
 ```
 
+Restore Codex + Claude Code:
+
+```bash
+scripts/bootstrap.sh --skip-curated --with-claude-code
+```
+
 ## 3. Target machine restore flow (portable-safe)
 
 ```bash
@@ -99,3 +105,5 @@ cp ~/.codex/rules/default.rules.bak.<timestamp> ~/.codex/rules/default.rules
 - `scripts/render-portable-rules.sh` keeps portable rules synchronized with `codex/skills/curated-manifest.txt`.
 - `scripts/check-toolchain.sh` detects toolchain drift against `codex/meta/toolchain.lock`.
 - `scripts/sync-codex-version.sh --apply` pins Codex CLI to exported version.
+- Full-home snapshots are organized by OS at `codex/os/<os>/snapshots/full-home/`.
+- Windows is included as installer/snapshot skeleton under `scripts/os/windows/install/` and `codex/os/windows/`.

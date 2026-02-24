@@ -2,6 +2,11 @@
 
 This document describes how to reproduce the same Codex environment on another machine from this repository.
 
+Per-OS quick guides:
+- `docs/setup/os/macos.md`
+- `docs/setup/os/ubuntu.md`
+- `docs/setup/os/windows-skeleton.md`
+
 ## Scope
 
 The snapshot intentionally includes only reproducible settings:
@@ -15,7 +20,7 @@ The snapshot intentionally includes only reproducible settings:
 - Repository baseline agent skills (`skills/codex-agents/*`) are always installed on target
 - Toolchain lock (`codex/meta/toolchain.lock`)
 - Optional project trust snapshot (`codex/config/projects.trust.snapshot.toml`)
-- Optional full OS-specific `~/.codex` snapshot (`codex/os/<os>/full-codex-home.*`)
+- Optional full OS-specific `~/.codex` snapshot (`codex/os/<os>/snapshots/full-home/*`)
 
 Default export intentionally excludes runtime/session files (auth/session/history/log).
 Use `--with-full-home` if you need an absolute mirror, including runtime/session state.
@@ -61,6 +66,20 @@ Linux:
 npm i -g @openai/codex
 ```
 
+Optional Claude Code bootstrap:
+
+macOS:
+
+```bash
+scripts/os/macos/install/ensure-claude-code.sh
+```
+
+Ubuntu/Linux:
+
+```bash
+scripts/os/linux/install/ensure-claude-code.sh
+```
+
 Set required environment variables (for deterministic template mode):
 
 ```bash
@@ -72,6 +91,12 @@ Run one-command restore:
 
 ```bash
 scripts/bootstrap.sh --skip-curated
+```
+
+Restore with Codex + Claude Code in one run:
+
+```bash
+scripts/bootstrap.sh --skip-curated --with-claude-code
 ```
 
 Install applies both:
@@ -119,3 +144,4 @@ scripts/verify.sh --full-home
 - If `codex mcp list` is unavailable, install/upgrade Codex CLI first.
 - If curated install fails, rerun with `--skip-curated`.
 - If Codex version mismatch is reported, run `scripts/sync-codex-version.sh --apply`.
+- Windows skeleton installers are provided in `scripts/os/windows/install/`.

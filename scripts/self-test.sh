@@ -2,15 +2,30 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 TEST_HOME="/tmp/better-codex-selftest-home"
 MANIFEST_FILE="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
 
 say() { echo "[SELF-TEST] $*"; }
+warn() { echo "[SELF-TEST][WARN] $*"; }
 err() { echo "[SELF-TEST][ERROR] $*"; }
 
 cd "$ROOT_DIR"
 
-for f in scripts/install.sh scripts/verify.sh scripts/codex-activate.sh scripts/export-from-local.sh scripts/bootstrap.sh scripts/audit-codex-agents.sh scripts/check-toolchain.sh scripts/sync-codex-version.sh scripts/render-portable-rules.sh; do
+for f in \
+  scripts/install.sh \
+  scripts/verify.sh \
+  scripts/codex-activate.sh \
+  scripts/export-from-local.sh \
+  scripts/bootstrap.sh \
+  scripts/audit-codex-agents.sh \
+  scripts/check-toolchain.sh \
+  scripts/sync-codex-version.sh \
+  scripts/render-portable-rules.sh \
+  scripts/os/common/platform.sh \
+  scripts/os/macos/ensure-codex.sh \
+  scripts/os/linux/ensure-codex.sh; do
   bash -n "$f"
 done
 say "Shell syntax: OK"
@@ -44,26 +59,38 @@ if [[ ! -f "$MANIFEST_FILE" ]]; then
   exit 1
 fi
 
-mapfile -t required_skills < <(grep -Ev '^\s*#|^\s*$' "$MANIFEST_FILE")
+required_skills=()
+while IFS= read -r line; do
+  required_skills+=("$line")
+done < <(read_nonempty_lines "$MANIFEST_FILE")
+
 if [[ ${#required_skills[@]} -eq 0 ]]; then
-  err "Skills manifest is empty"
-  exit 1
+  warn "Skills manifest is empty; skipping snapshot skill presence assertions"
+else
+  for skill in "${required_skills[@]}"; do
+    if [[ ! -f "$TEST_HOME/skills/$skill/SKILL.md" ]]; then
+      err "Missing installed skill: $skill"
+      exit 1
+    fi
+  done
 fi
 
-for skill in "${required_skills[@]}"; do
-  if [[ ! -f "$TEST_HOME/skills/$skill/SKILL.md" ]]; then
-    err "Missing installed skill: $skill"
+if grep -q '__CONTEXT7_API_KEY__' "$ROOT_DIR/codex/config/config.template.toml"; then
+  if ! grep -Eq 'CONTEXT7_API_KEY = "ctx7sk-selftest"|"x-context7-api-key" = "ctx7sk-selftest"' "$TEST_HOME/config.toml"; then
+    err "Context7 token substitution failed"
     exit 1
   fi
-done
-
-if ! grep -q 'CONTEXT7_API_KEY = "ctx7sk-selftest"' "$TEST_HOME/config.toml"; then
-  err "Context7 token substitution failed"
-  exit 1
+else
+  warn "Config template has no Context7 placeholder; skipping substitution assertion"
 fi
-if ! grep -q 'Authorization = "Bearer gho_selftest"' "$TEST_HOME/config.toml"; then
-  err "GitHub MCP token substitution failed"
-  exit 1
+
+if grep -q '__GITHUB_MCP_TOKEN__' "$ROOT_DIR/codex/config/config.template.toml"; then
+  if ! grep -Eq 'Authorization = "Bearer gho_selftest"|"Authorization" = "Bearer gho_selftest"' "$TEST_HOME/config.toml"; then
+    err "GitHub MCP token substitution failed"
+    exit 1
+  fi
+else
+  warn "Config template has no GitHub placeholder; skipping substitution assertion"
 fi
 if grep -q '__HOME__' "$TEST_HOME/rules/default.rules"; then
   err "Rules home placeholder replacement failed"

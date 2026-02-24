@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 LOCK_FILE="$ROOT_DIR/codex/meta/toolchain.lock"
 APPLY=false
 
@@ -45,19 +47,29 @@ if [[ "$current" == "$expected" ]]; then
   exit 0
 fi
 
+platform="$(platform_id)"
+
 if ! $APPLY; then
   warn "Codex version mismatch: expected $expected, got $current"
-  say "Run: npm i -g @openai/codex@$expected"
+  if [[ "$platform" == "macos" ]]; then
+    say "Run: scripts/os/macos/ensure-codex.sh --expected-version $expected"
+  else
+    say "Run: npm i -g @openai/codex@$expected"
+  fi
   exit 1
 fi
 
-if ! command -v npm >/dev/null 2>&1; then
-  err "npm is required to install codex"
-  exit 1
-fi
+if [[ "$platform" == "macos" ]]; then
+  "$ROOT_DIR/scripts/os/macos/ensure-codex.sh" --expected-version "$expected"
+else
+  if ! command -v npm >/dev/null 2>&1; then
+    err "npm is required to install codex on non-macOS systems"
+    exit 1
+  fi
 
-say "Installing @openai/codex@$expected via npm -g"
-npm i -g "@openai/codex@$expected"
+  say "Installing @openai/codex@$expected via npm -g"
+  npm i -g "@openai/codex@$expected"
+fi
 
 installed="$(codex --version 2>/dev/null | awk '{print $2}' || echo unknown)"
 if [[ "$installed" != "$expected" ]]; then
@@ -66,4 +78,3 @@ if [[ "$installed" != "$expected" ]]; then
 fi
 
 say "Codex pinned successfully: $installed"
-

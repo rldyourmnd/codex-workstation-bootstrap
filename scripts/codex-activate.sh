@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 # Codex MCP/Skills bootstrap and health check for this repo.
 # Usage:
 #   scripts/codex-activate.sh            # enable required MCP, then validate
@@ -143,7 +146,10 @@ else
   done
 
   say "Auditing all installed skills for SKILL.md/frontmatter"
-  mapfile -t installed_skill_dirs < <(find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+  installed_skill_dirs=()
+  while IFS= read -r dir; do
+    installed_skill_dirs+=("$dir")
+  done < <(list_top_level_dirs "$SKILLS_DIR")
   for installed in "${installed_skill_dirs[@]}"; do
     if [[ "$installed" == ".system" ]]; then
       continue
@@ -161,7 +167,10 @@ else
   done
 
   # Duplicate skill name detection from frontmatter.
-  mapfile -t skill_files < <(find "$SKILLS_DIR" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' | sort)
+  skill_files=()
+  while IFS= read -r file; do
+    skill_files+=("$file")
+  done < <(find "$SKILLS_DIR" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' | sort)
   if [[ ${#skill_files[@]} -gt 0 ]]; then
     dupes="$(awk '/^name:/ {print $2}' "${skill_files[@]}" | sort | uniq -d || true)"
     if [[ -n "$dupes" ]]; then

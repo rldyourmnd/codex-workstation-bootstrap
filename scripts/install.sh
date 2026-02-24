@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 TEMPLATE_CONFIG="$ROOT_DIR/codex/config/config.template.toml"
 TARGET_CONFIG="$CODEX_HOME_DIR/config.toml"
@@ -22,6 +24,11 @@ CUSTOM_SKILLS_SHA256="$ROOT_DIR/codex/skills/custom-skills.sha256"
 CUSTOM_SKILLS_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
 CURATED_MANIFEST="$ROOT_DIR/codex/skills/curated-manifest.txt"
 SKILL_INSTALLER="$CODEX_HOME_DIR/skills/.system/skill-installer/scripts/install-skill-from-github.py"
+PLATFORM_ID="$(platform_id)"
+OS_SNAPSHOT_DIR="$ROOT_DIR/codex/os/$PLATFORM_ID"
+FULL_HOME_ARCHIVE_B64="$OS_SNAPSHOT_DIR/full-codex-home.tar.gz.b64"
+FULL_HOME_SHA256="$OS_SNAPSHOT_DIR/full-codex-home.sha256"
+FULL_HOME_MANIFEST="$OS_SNAPSHOT_DIR/full-codex-home.manifest.txt"
 
 FORCE=false
 DRY_RUN=false
@@ -29,6 +36,7 @@ SKIP_CURATED=false
 CLEAN_SKILLS=false
 RULES_MODE="exact"
 APPLY_PROJECT_TRUST=true
+RESTORE_FULL_HOME=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -60,9 +68,13 @@ while [[ $# -gt 0 ]]; do
       APPLY_PROJECT_TRUST=false
       shift
       ;;
+    --restore-full-home)
+      RESTORE_FULL_HOME=true
+      shift
+      ;;
     *)
       echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/install.sh [--force] [--dry-run] [--skip-curated] [--clean-skills] [--rules-mode portable|exact] [--skip-project-trust]"
+      echo "Usage: scripts/install.sh [--force] [--dry-run] [--skip-curated] [--clean-skills] [--rules-mode portable|exact] [--skip-project-trust] [--restore-full-home]"
       exit 1
       ;;
   esac
@@ -104,20 +116,90 @@ backup_if_exists() {
   fi
 }
 
-if [[ ! -f "$TEMPLATE_CONFIG" ]]; then
-  err "Missing template config: $TEMPLATE_CONFIG"
-  exit 1
-fi
-
 for tool in sed tar base64 rsync; do
   require_tool "$tool"
 done
 
 if ! command -v codex >/dev/null 2>&1; then
-  warn "codex CLI not found in PATH. Install it first (npm i -g @openai/codex)."
+  warn "codex CLI not found in PATH. Run: scripts/os/$PLATFORM_ID/ensure-codex.sh"
 fi
 
 mkdir -p "$CODEX_HOME_DIR" "$TARGET_RULES_DIR" "$TARGET_SKILLS_DIR"
+
+if $RESTORE_FULL_HOME; then
+  if [[ ! -f "$FULL_HOME_ARCHIVE_B64" ]]; then
+    err "Full snapshot not found for platform '$PLATFORM_ID': $FULL_HOME_ARCHIVE_B64"
+    err "Create it on source machine via: scripts/export-from-local.sh --with-full-home"
+    exit 1
+  fi
+
+  codex_home_has_content=false
+  if [[ -d "$CODEX_HOME_DIR" ]] && find "$CODEX_HOME_DIR" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+    codex_home_has_content=true
+  fi
+
+  if $codex_home_has_content && ! $FORCE; then
+    err "$CODEX_HOME_DIR is not empty. Re-run with --force to replace it."
+    exit 1
+  fi
+
+  if $DRY_RUN; then
+    echo "[DRY-RUN] restore full codex home from '$FULL_HOME_ARCHIVE_B64' into '$CODEX_HOME_DIR'"
+    if [[ -f "$FULL_HOME_SHA256" ]]; then
+      echo "[DRY-RUN] verify checksum from '$FULL_HOME_SHA256'"
+    fi
+    if [[ -f "$FULL_HOME_MANIFEST" ]]; then
+      echo "[DRY-RUN] validate files against '$FULL_HOME_MANIFEST'"
+    fi
+    say "Dry-run full-home restore complete"
+    exit 0
+  fi
+
+  if $codex_home_has_content; then
+    backup_dir="${CODEX_HOME_DIR}.bak.$(date +%Y%m%d_%H%M%S)"
+    cp -R "$CODEX_HOME_DIR" "$backup_dir"
+    say "Backed up existing codex home to $backup_dir"
+    find "$CODEX_HOME_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  fi
+
+  tmp_full_archive="$(mktemp_with_suffix .tar.gz)"
+  base64_decode_file "$FULL_HOME_ARCHIVE_B64" "$tmp_full_archive"
+
+  if [[ -f "$FULL_HOME_SHA256" ]]; then
+    expected_sha="$(cat "$FULL_HOME_SHA256")"
+    actual_sha="$(sha256_file "$tmp_full_archive")"
+    if [[ "$actual_sha" != "$expected_sha" ]]; then
+      rm -f "$tmp_full_archive"
+      err "Full snapshot checksum verification failed"
+      exit 1
+    fi
+  fi
+
+  tar -xzf "$tmp_full_archive" -C "$CODEX_HOME_DIR"
+  rm -f "$tmp_full_archive"
+
+  if [[ -f "$FULL_HOME_MANIFEST" ]]; then
+    missing=0
+    while IFS= read -r relpath; do
+      if [[ ! -e "$CODEX_HOME_DIR/$relpath" ]]; then
+        warn "Missing restored entry: $relpath"
+        missing=$((missing + 1))
+      fi
+    done < <(read_nonempty_lines "$FULL_HOME_MANIFEST")
+    if [[ $missing -gt 0 ]]; then
+      err "Full restore finished with $missing missing entries"
+      exit 1
+    fi
+  fi
+
+  say "Full codex home restored for platform '$PLATFORM_ID'"
+  exit 0
+fi
+
+if [[ ! -f "$TEMPLATE_CONFIG" ]]; then
+  err "Missing template config: $TEMPLATE_CONFIG"
+  exit 1
+fi
 
 if [[ -f "$TARGET_CONFIG" ]]; then
   if ! $FORCE; then
@@ -145,10 +227,9 @@ safe_c7="${safe_c7//&/\\&}"
 safe_gh="${GITHUB_MCP_TOKEN_VALUE//\\/\\\\}"
 safe_gh="${safe_gh//&/\\&}"
 
-sed -i \
+sed_inplace "$TMP_CONFIG" \
   -e "s|__CONTEXT7_API_KEY__|$safe_c7|g" \
-  -e "s|__GITHUB_MCP_TOKEN__|$safe_gh|g" \
-  "$TMP_CONFIG"
+  -e "s|__GITHUB_MCP_TOKEN__|$safe_gh|g"
 
 run cp "$TMP_CONFIG" "$TARGET_CONFIG"
 rm -f "$TMP_CONFIG"
@@ -159,7 +240,7 @@ if $APPLY_PROJECT_TRUST; then
     TMP_PROJECTS="$(mktemp)"
     cp "$PROJECT_TRUST_SNAPSHOT" "$TMP_PROJECTS"
     escaped_home="$(printf '%s' "$HOME" | sed 's/[.[\\*^$()+?{|]/\\&/g')"
-    sed -i "s|__HOME__|$escaped_home|g" "$TMP_PROJECTS"
+    sed_inplace "$TMP_PROJECTS" -e "s|__HOME__|$escaped_home|g"
     if $DRY_RUN; then
       echo "[DRY-RUN] append project trust snapshot from '$PROJECT_TRUST_SNAPSHOT' to '$TARGET_CONFIG'"
     else
@@ -205,7 +286,7 @@ if [[ -n "$rules_source" ]]; then
   TMP_RULES="$(mktemp)"
   cp "$rules_source" "$TMP_RULES"
   escaped_home="$(printf '%s' "$HOME" | sed 's/[.[\\*^$()+?{|]/\\&/g')"
-  sed -i "s|__HOME__|$escaped_home|g" "$TMP_RULES"
+  sed_inplace "$TMP_RULES" -e "s|__HOME__|$escaped_home|g"
   if [[ -f "$TARGET_RULES_FILE" ]]; then
     if $FORCE; then
       backup_if_exists "$TARGET_RULES_FILE"
@@ -243,21 +324,21 @@ if $CLEAN_SKILLS; then
 fi
 
 if [[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]]; then
-  TMP_ARCHIVE="$(mktemp --suffix=.tar.gz)"
+  TMP_ARCHIVE="$(mktemp_with_suffix .tar.gz)"
   TMP_EXTRACT_DIR="$(mktemp -d)"
 
   if $DRY_RUN; then
-    echo "[DRY-RUN] base64 -d '$CUSTOM_SKILLS_ARCHIVE_B64' > '$TMP_ARCHIVE'"
+    echo "[DRY-RUN] decode base64 '$CUSTOM_SKILLS_ARCHIVE_B64' -> '$TMP_ARCHIVE'"
     if [[ -f "$CUSTOM_SKILLS_SHA256" ]]; then
       echo "[DRY-RUN] verify sha256 from '$CUSTOM_SKILLS_SHA256'"
     fi
     echo "[DRY-RUN] tar -xzf '$TMP_ARCHIVE' -C '$TMP_EXTRACT_DIR'"
     echo "[DRY-RUN] rsync extracted skills to '$TARGET_SKILLS_DIR/'"
   else
-    base64 -d "$CUSTOM_SKILLS_ARCHIVE_B64" > "$TMP_ARCHIVE"
-    if [[ -f "$CUSTOM_SKILLS_SHA256" ]] && command -v sha256sum >/dev/null 2>&1; then
+    base64_decode_file "$CUSTOM_SKILLS_ARCHIVE_B64" "$TMP_ARCHIVE"
+    if [[ -f "$CUSTOM_SKILLS_SHA256" ]]; then
       expected_sha="$(cat "$CUSTOM_SKILLS_SHA256")"
-      actual_sha="$(sha256sum "$TMP_ARCHIVE" | awk '{print $1}')"
+      actual_sha="$(sha256_file "$TMP_ARCHIVE")"
       if [[ "$actual_sha" != "$expected_sha" ]]; then
         err "Custom skills archive checksum verification failed"
         rm -f "$TMP_ARCHIVE"
@@ -284,7 +365,10 @@ else
 fi
 
 if [[ -f "$CUSTOM_SKILLS_MANIFEST" ]]; then
-  mapfile -t expected_custom < <(grep -Ev '^\s*#|^\s*$' "$CUSTOM_SKILLS_MANIFEST" || true)
+  expected_custom=()
+  while IFS= read -r line; do
+    expected_custom+=("$line")
+  done < <(read_nonempty_lines "$CUSTOM_SKILLS_MANIFEST")
   if [[ ${#expected_custom[@]} -gt 0 ]]; then
     missing_custom=0
     for skill in "${expected_custom[@]}"; do
@@ -301,7 +385,10 @@ fi
 
 if ! $SKIP_CURATED; then
   if [[ -f "$SKILL_INSTALLER" && -f "$CURATED_MANIFEST" ]]; then
-    mapfile -t curated_paths < <(grep -Ev '^\s*#|^\s*$' "$CURATED_MANIFEST")
+    curated_paths=()
+    while IFS= read -r line; do
+      curated_paths+=("$line")
+    done < <(read_nonempty_lines "$CURATED_MANIFEST")
     if [[ ${#curated_paths[@]} -gt 0 ]]; then
       if $DRY_RUN; then
         echo "[DRY-RUN] python3 '$SKILL_INSTALLER' --repo openai/skills --path ${curated_paths[*]}"

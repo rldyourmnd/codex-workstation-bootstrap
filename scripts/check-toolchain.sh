@@ -41,7 +41,7 @@ if [[ ! -f "$LOCK_FILE" ]]; then
   exit 1
 fi
 
-required_bins=(codex node npm python3 tar base64 rsync sed awk)
+required_bins=(codex python3 tar base64 rsync sed awk)
 for bin in "${required_bins[@]}"; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     err "Missing required binary: $bin"
@@ -128,4 +128,3 @@ if [[ $mismatches -gt 0 ]]; then
 else
   say "Toolchain check passed with exact match"
 fi
-

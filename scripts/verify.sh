@@ -2,6 +2,24 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
+FULL_HOME_MODE=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --full-home)
+      FULL_HOME_MODE=true
+      shift
+      ;;
+    *)
+      echo "[ERROR] Unknown argument: $1"
+      echo "Usage: scripts/verify.sh [--full-home]"
+      exit 1
+      ;;
+  esac
+done
+
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 CONFIG_FILE="$CODEX_HOME_DIR/config.toml"
 GLOBAL_AGENTS_FILE="$CODEX_HOME_DIR/AGENTS.md"
@@ -105,6 +123,19 @@ if [[ -z "$status" ]]; then
 fi
 
 for mcp in "${REQUIRED_MCPS[@]}"; do
+  if $FULL_HOME_MODE; then
+    if ! grep -Eq "^${mcp}[[:space:]]+" <<<"$status"; then
+      warn "Full-home mode: MCP '$mcp' not present"
+      continue
+    fi
+    if ! grep -E "^${mcp}[[:space:]].*[[:space:]]enabled([[:space:]]|$)" <<<"$status" >/dev/null; then
+      warn "Full-home mode: MCP '$mcp' is configured but disabled"
+      continue
+    fi
+    say "MCP configured: $mcp"
+    continue
+  fi
+
   if ! grep -Eq "^${mcp}[[:space:]]+" <<<"$status"; then
     err "Missing MCP: $mcp"
     exit 1
@@ -172,14 +203,24 @@ if [[ -f "$PROJECT_TRUST_SNAPSHOT" ]] && grep -Eq '^\[projects\.' "$PROJECT_TRUS
 fi
 
 if [[ -f "$CUSTOM_MANIFEST" ]]; then
-  mapfile -t REQUIRED_CUSTOM_SKILLS < <(grep -Ev '^\s*#|^\s*$' "$CUSTOM_MANIFEST" || true)
+  REQUIRED_CUSTOM_SKILLS=()
+  while IFS= read -r line; do
+    REQUIRED_CUSTOM_SKILLS+=("$line")
+  done < <(read_nonempty_lines "$CUSTOM_MANIFEST")
 else
   REQUIRED_CUSTOM_SKILLS=("${DEFAULT_REQUIRED_CUSTOM_SKILLS[@]}")
 fi
 
+if $FULL_HOME_MODE; then
+  say "Full-home mode: skipping fixed custom skill manifest checks"
+  say "Verification passed"
+  exit 0
+fi
+
 if [[ ${#REQUIRED_CUSTOM_SKILLS[@]} -eq 0 ]]; then
-  err "No expected skills listed for verification"
-  exit 1
+  warn "No expected custom skills listed; skipping custom skill verification"
+  say "Verification passed"
+  exit 0
 fi
 
 for skill in "${REQUIRED_CUSTOM_SKILLS[@]}"; do

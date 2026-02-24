@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 SKIP_CURATED=false
 FORCE=true
 CLEAN_SKILLS=true
@@ -9,6 +11,7 @@ RULES_MODE="exact"
 APPLY_PROJECT_TRUST=true
 SYNC_CODEX_VERSION=true
 STRICT_TOOLCHAIN=true
+RESTORE_FULL_HOME=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -44,9 +47,13 @@ while [[ $# -gt 0 ]]; do
       STRICT_TOOLCHAIN=false
       shift
       ;;
+    --full-home)
+      RESTORE_FULL_HOME=true
+      shift
+      ;;
     *)
       echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/bootstrap.sh [--skip-curated] [--no-force] [--no-clean-skills] [--portable-rules] [--skip-project-trust] [--no-sync-codex-version] [--no-strict-toolchain]"
+      echo "Usage: scripts/bootstrap.sh [--skip-curated] [--no-force] [--no-clean-skills] [--portable-rules] [--skip-project-trust] [--no-sync-codex-version] [--no-strict-toolchain] [--full-home]"
       exit 1
       ;;
   esac
@@ -55,8 +62,17 @@ done
 say() { echo "[BOOTSTRAP] $*"; }
 warn() { echo "[BOOTSTRAP][WARN] $*"; }
 
-if ! command -v codex >/dev/null 2>&1; then
-  warn "codex CLI not found in PATH. Install first: npm i -g @openai/codex"
+expected_codex="$(
+  grep -E '^CODEX_VERSION=' "$ROOT_DIR/codex/meta/toolchain.lock" | head -n1 | cut -d'=' -f2- || true
+)"
+platform="$(platform_id)"
+os_setup_script="$ROOT_DIR/scripts/os/$platform/ensure-codex.sh"
+
+if [[ -x "$os_setup_script" ]]; then
+  say "Running OS bootstrap: scripts/os/$platform/ensure-codex.sh"
+  "$os_setup_script" --expected-version "${expected_codex:-unknown}"
+else
+  warn "No OS bootstrap script found for platform '$platform'"
 fi
 
 if [[ -z "${CONTEXT7_API_KEY:-}" ]]; then
@@ -90,9 +106,20 @@ install_args+=(--rules-mode "$RULES_MODE")
 if ! $APPLY_PROJECT_TRUST; then
   install_args+=(--skip-project-trust)
 fi
+if $RESTORE_FULL_HOME; then
+  install_args+=(--restore-full-home)
+fi
 
 say "Running install.sh ${install_args[*]}"
 "$ROOT_DIR/scripts/install.sh" "${install_args[@]}"
+
+if $RESTORE_FULL_HOME; then
+  say "Running verify.sh --full-home"
+  "$ROOT_DIR/scripts/verify.sh" --full-home
+  say "Skipping audit-codex-agents.sh and codex-activate.sh in full-home mode"
+  say "Bootstrap complete"
+  exit 0
+fi
 
 say "Running verify.sh"
 "$ROOT_DIR/scripts/verify.sh"

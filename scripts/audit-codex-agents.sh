@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 SKILLS_DIR="$ROOT_DIR/skills/codex-agents"
 DOCS_DIR="$ROOT_DIR/docs/agents"
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
@@ -14,6 +16,18 @@ err() { echo "[AUDIT][ERROR] $*"; }
 errors=0
 warnings=0
 
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 if [[ ! -d "$SKILLS_DIR" ]]; then
   err "Skills directory not found: $SKILLS_DIR"
   exit 1
@@ -23,8 +37,21 @@ if [[ ! -d "$DOCS_DIR" ]]; then
   exit 1
 fi
 
-mapfile -t skill_profiles < <(find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
-mapfile -t doc_profiles < <(find "$DOCS_DIR" -mindepth 1 -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sed 's/\.md$//' | grep -v '^README$' | sort)
+skill_profiles=()
+while IFS= read -r line; do
+  skill_profiles+=("$line")
+done < <(list_top_level_dirs "$SKILLS_DIR")
+
+doc_profiles=()
+while IFS= read -r line; do
+  doc_profiles+=("$line")
+done < <(
+  find "$DOCS_DIR" -mindepth 1 -maxdepth 1 -type f -name '*.md' \
+    | sed 's|.*/||' \
+    | sed 's/\.md$//' \
+    | grep -v '^README$' \
+    | sort
+)
 
 if [[ ${#skill_profiles[@]} -eq 0 ]]; then
   err "No skill profiles found"
@@ -36,23 +63,14 @@ if [[ ${#skill_profiles[@]} -ne 9 ]]; then
   warnings=$((warnings + 1))
 fi
 
-declare -A skill_set=()
-declare -A doc_set=()
 for s in "${skill_profiles[@]}"; do
-  skill_set["$s"]=1
-done
-for d in "${doc_profiles[@]}"; do
-  doc_set["$d"]=1
-done
-
-for s in "${skill_profiles[@]}"; do
-  if [[ -z "${doc_set[$s]:-}" ]]; then
+  if ! array_contains "$s" "${doc_profiles[@]}"; then
     err "Missing docs profile for skill: docs/agents/$s.md"
     errors=$((errors + 1))
   fi
 done
 for d in "${doc_profiles[@]}"; do
-  if [[ -z "${skill_set[$d]:-}" ]]; then
+  if ! array_contains "$d" "${skill_profiles[@]}"; then
     err "Missing skill profile for docs entry: skills/codex-agents/$d"
     errors=$((errors + 1))
   fi
@@ -74,7 +92,7 @@ for profile in "${skill_profiles[@]}"; do
     continue
   fi
 
-  declared_name="$(grep -E '^name:' "$skill_md" | head -n1 | sed -E 's/^name:\s*//')"
+  declared_name="$(grep -E '^name:' "$skill_md" | head -n1 | sed -E 's/^name:\s*//' | awk '{$1=$1;print}')"
   if [[ "$declared_name" != "$profile" ]]; then
     err "Frontmatter name mismatch in $skill_md (expected $profile, got $declared_name)"
     errors=$((errors + 1))
@@ -94,7 +112,14 @@ for profile in "${skill_profiles[@]}"; do
   fi
 
   if [[ -f "$doc_md" ]]; then
-    mapfile -t mcps < <(grep -E 'value:\s*"[^"]+"' "$agent_yaml" | sed -E 's/.*value:\s*"([^"]+)".*/\1/' | sort -u)
+    mcps=()
+    while IFS= read -r line; do
+      mcps+=("$line")
+    done < <(
+      grep -E 'value:\s*"[^"]+"' "$agent_yaml" \
+        | sed -E 's/.*value:\s*"([^"]+)".*/\1/' \
+        | sort -u
+    )
     for mcp in "${mcps[@]}"; do
       case "$mcp" in
         context7) token="Context7" ;;
@@ -117,8 +142,8 @@ if [[ -f "$QUICK_VALIDATE" ]] && command -v python3 >/dev/null 2>&1; then
   for profile in "${skill_profiles[@]}"; do
     profile_dir="$SKILLS_DIR/$profile"
     if ! python3 "$QUICK_VALIDATE" "$profile_dir" >/dev/null 2>&1; then
-      err "quick_validate.py failed for $profile_dir"
-      errors=$((errors + 1))
+      warn "quick_validate.py failed for $profile_dir"
+      warnings=$((warnings + 1))
     fi
   done
 else

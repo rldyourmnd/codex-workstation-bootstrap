@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 CURATED_MANIFEST="$ROOT_DIR/codex/skills/curated-manifest.txt"
 OUTPUT_FILE="${1:-}"
 
@@ -12,7 +14,11 @@ if [[ ! -f "$CURATED_MANIFEST" ]]; then
   exit 1
 fi
 
-mapfile -t curated_paths < <(grep -Ev '^\s*#|^\s*$' "$CURATED_MANIFEST")
+curated_paths=()
+while IFS= read -r line; do
+  curated_paths+=("$line")
+done < <(read_nonempty_lines "$CURATED_MANIFEST")
+
 if [[ ${#curated_paths[@]} -eq 0 ]]; then
   err "Curated manifest is empty: $CURATED_MANIFEST"
   exit 1
@@ -36,4 +42,3 @@ if [[ -n "$OUTPUT_FILE" ]]; then
 else
   render_rules
 fi
-

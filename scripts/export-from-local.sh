@@ -2,7 +2,47 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SOURCE_CODEX_HOME="${1:-${CODEX_HOME:-$HOME/.codex}}"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
+SOURCE_CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+SOURCE_PATH_SET=false
+EXPORT_FULL_HOME=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --source)
+      if [[ $# -lt 2 ]]; then
+        echo "[ERROR] --source requires a value"
+        exit 1
+      fi
+      SOURCE_CODEX_HOME="$2"
+      SOURCE_PATH_SET=true
+      shift 2
+      ;;
+    --with-full-home)
+      EXPORT_FULL_HOME=true
+      shift
+      ;;
+    --help)
+      echo "Usage: scripts/export-from-local.sh [--source <path-to-codex-home>] [--with-full-home]"
+      exit 0
+      ;;
+    *)
+      if [[ "$1" == --* ]]; then
+        echo "[ERROR] Unknown argument: $1"
+        exit 1
+      fi
+      if $SOURCE_PATH_SET; then
+        echo "[ERROR] Multiple source paths provided"
+        exit 1
+      fi
+      SOURCE_CODEX_HOME="$1"
+      SOURCE_PATH_SET=true
+      shift
+      ;;
+  esac
+done
+
 SOURCE_CONFIG="$SOURCE_CODEX_HOME/config.toml"
 SOURCE_GLOBAL_AGENTS="$SOURCE_CODEX_HOME/AGENTS.md"
 SOURCE_RULES="$SOURCE_CODEX_HOME/rules/default.rules"
@@ -19,12 +59,19 @@ DEST_CUSTOM_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
 DEST_PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
 DEST_TOOLCHAIN_LOCK="$ROOT_DIR/codex/meta/toolchain.lock"
 RULES_RENDERER="$ROOT_DIR/scripts/render-portable-rules.sh"
-TMP_DIR="$(mktemp -d)"
 
+SOURCE_PLATFORM="$(platform_id)"
+DEST_OS_DIR="$ROOT_DIR/codex/os/$SOURCE_PLATFORM"
+DEST_FULL_HOME_ARCHIVE_B64="$DEST_OS_DIR/full-codex-home.tar.gz.b64"
+DEST_FULL_HOME_ARCHIVE_SHA256="$DEST_OS_DIR/full-codex-home.sha256"
+DEST_FULL_HOME_MANIFEST="$DEST_OS_DIR/full-codex-home.manifest.txt"
+
+TMP_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
 say() { echo "[INFO] $*"; }
+warn() { echo "[WARN] $*"; }
 err() { echo "[ERROR] $*"; }
 
 require_tool() {
@@ -35,20 +82,9 @@ require_tool() {
   fi
 }
 
-base64_nolinewrap() {
-  local src="$1"
-  if base64 --help 2>/dev/null | grep -q -- '-w'; then
-    base64 -w 0 "$src"
-  else
-    base64 "$src" | tr -d '\n'
-  fi
-}
-
-require_tool awk
-require_tool sed
-require_tool rsync
-require_tool tar
-require_tool base64
+for tool in awk sed rsync tar base64; do
+  require_tool "$tool"
+done
 
 if [[ ! -x "$RULES_RENDERER" ]]; then
   err "Missing executable rules renderer: $RULES_RENDERER"
@@ -59,27 +95,28 @@ if [[ ! -f "$SOURCE_CONFIG" ]]; then
   err "Missing source config: $SOURCE_CONFIG"
   exit 1
 fi
-
 if [[ ! -d "$SOURCE_SKILLS_DIR" ]]; then
   err "Missing source skills dir: $SOURCE_SKILLS_DIR"
   exit 1
 fi
 
-mkdir -p "$ROOT_DIR/codex/agents" "$ROOT_DIR/codex/rules" "$ROOT_DIR/codex/skills" "$ROOT_DIR/codex/meta"
+mkdir -p \
+  "$ROOT_DIR/codex/agents" \
+  "$ROOT_DIR/codex/rules" \
+  "$ROOT_DIR/codex/skills" \
+  "$ROOT_DIR/codex/meta" \
+  "$DEST_OS_DIR"
 
 cp "$SOURCE_CONFIG" "$DEST_CONFIG_TEMPLATE"
 
 # Sanitize secrets for portable template.
-# 1) Generic redaction for key/value settings that look secret-like.
-sed -i -E \
-  -e 's#^([[:space:]]*[A-Za-z0-9_]*(KEY|TOKEN|SECRET|PASSWORD)[A-Za-z0-9_]*[[:space:]]*=[[:space:]]*").*(".*)$#\1__REDACTED__\3#' \
-  "$DEST_CONFIG_TEMPLATE"
-
-# 2) Stable placeholders used by install.sh.
-sed -i \
+sed_inplace "$DEST_CONFIG_TEMPLATE" -E \
+  -e 's#^([[:space:]]*[A-Za-z0-9_-]*([Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd])[A-Za-z0-9_-]*[[:space:]]*=[[:space:]]*").*(".*)$#\1__REDACTED__\3#'
+sed_inplace "$DEST_CONFIG_TEMPLATE" \
   -e 's|CONTEXT7_API_KEY = ".*"|CONTEXT7_API_KEY = "__CONTEXT7_API_KEY__"|g' \
+  -e 's|"x-context7-api-key"[[:space:]]*=[[:space:]]*".*"|"x-context7-api-key" = "__CONTEXT7_API_KEY__"|g' \
   -e 's|Authorization = "Bearer .*"|Authorization = "Bearer __GITHUB_MCP_TOKEN__"|g' \
-  "$DEST_CONFIG_TEMPLATE"
+  -e 's|"Authorization"[[:space:]]*=[[:space:]]*"Bearer .*"|"Authorization" = "Bearer __GITHUB_MCP_TOKEN__"|g'
 
 # Drop machine-specific project trust entries.
 awk '
@@ -102,7 +139,7 @@ awk '
 
 if [[ -s "$TMP_DIR/projects.trust.raw.toml" ]]; then
   cp "$TMP_DIR/projects.trust.raw.toml" "$DEST_PROJECT_TRUST_SNAPSHOT"
-  sed -i "s|$escaped_source_home|__HOME__|g" "$DEST_PROJECT_TRUST_SNAPSHOT"
+  sed_inplace "$DEST_PROJECT_TRUST_SNAPSHOT" -e "s|$escaped_source_home|__HOME__|g"
 else
   cat > "$DEST_PROJECT_TRUST_SNAPSHOT" <<'PROJECTS'
 # No project trust entries were found during last export.
@@ -120,7 +157,7 @@ fi
 
 if [[ -f "$SOURCE_RULES" ]]; then
   cp "$SOURCE_RULES" "$DEST_RULES_SOURCE_SNAPSHOT"
-  sed -i "s|$escaped_source_home|__HOME__|g" "$DEST_RULES_SOURCE_SNAPSHOT"
+  sed_inplace "$DEST_RULES_SOURCE_SNAPSHOT" -e "s|$escaped_source_home|__HOME__|g"
   "$RULES_RENDERER" "$DEST_RULES"
   "$RULES_RENDERER" "$DEST_RULES_TEMPLATE"
   say "Updated: $DEST_RULES"
@@ -152,7 +189,7 @@ arch_name="$(uname -m 2>/dev/null || true)"
 
 cat > "$DEST_TOOLCHAIN_LOCK" <<EOF
 # Generated by scripts/export-from-local.sh
-GENERATED_AT_UTC=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+GENERATED_AT_UTC=$(utc_now_iso)
 OS_NAME=${os_name:-unknown}
 ARCH_NAME=${arch_name:-unknown}
 CODEX_VERSION=${codex_version:-unknown}
@@ -164,27 +201,32 @@ UVX_VERSION=${uvx_version:-unknown}
 GH_VERSION=${gh_version:-unknown}
 EOF
 
-mapfile -t skills_to_pack < <(
-  find "$SOURCE_SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
+skills_to_pack=()
+while IFS= read -r skill; do
+  skills_to_pack+=("$skill")
+done < <(
+  find "$SOURCE_SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d \
+    | sed 's|.*/||' \
     | grep -Ev '^\.system$' \
     | sort
 )
 
-if [[ ${#skills_to_pack[@]} -eq 0 ]]; then
-  err "No non-system skills found under $SOURCE_SKILLS_DIR"
-  exit 1
-fi
-
 mkdir -p "$TMP_DIR/custom"
-for skill in "${skills_to_pack[@]}"; do
-  if [[ ! -f "$SOURCE_SKILLS_DIR/$skill/SKILL.md" ]]; then
-    err "Skill missing SKILL.md: $skill"
-    exit 1
-  fi
-  rsync -a --delete "$SOURCE_SKILLS_DIR/$skill" "$TMP_DIR/custom/"
-done
-
-printf '%s\n' "${skills_to_pack[@]}" > "$DEST_CUSTOM_MANIFEST"
+if [[ ${#skills_to_pack[@]} -eq 0 ]]; then
+  warn "No non-system skills found under $SOURCE_SKILLS_DIR"
+  cat > "$DEST_CUSTOM_MANIFEST" <<'MANIFEST'
+# No non-system skills were found during last export.
+MANIFEST
+else
+  for skill in "${skills_to_pack[@]}"; do
+    if [[ ! -f "$SOURCE_SKILLS_DIR/$skill/SKILL.md" ]]; then
+      err "Skill missing SKILL.md: $skill"
+      exit 1
+    fi
+    rsync -a --delete "$SOURCE_SKILLS_DIR/$skill" "$TMP_DIR/custom/"
+  done
+  printf '%s\n' "${skills_to_pack[@]}" > "$DEST_CUSTOM_MANIFEST"
+fi
 
 # Keep artifact compact.
 find "$TMP_DIR/custom" -type d -name '__pycache__' -prune -exec rm -rf {} +
@@ -195,10 +237,27 @@ if tar --help 2>/dev/null | grep -q -- '--sort'; then
 else
   tar -C "$TMP_DIR/custom" -czf "$TMP_DIR/custom-skills.tar.gz" .
 fi
-base64_nolinewrap "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_B64"
+base64_encode_nolinewrap "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_B64"
+sha256_file "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_SHA256"
 
-if command -v sha256sum >/dev/null 2>&1; then
-  sha256sum "$TMP_DIR/custom-skills.tar.gz" | awk '{print $1}' > "$DEST_CUSTOM_ARCHIVE_SHA256"
+if $EXPORT_FULL_HOME; then
+  full_archive="$TMP_DIR/full-codex-home.tar.gz"
+  if tar --help 2>/dev/null | grep -q -- '--sort'; then
+    tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
+  else
+    tar -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
+  fi
+
+  base64_encode_nolinewrap "$full_archive" > "$DEST_FULL_HOME_ARCHIVE_B64"
+  sha256_file "$full_archive" > "$DEST_FULL_HOME_ARCHIVE_SHA256"
+
+  find "$SOURCE_CODEX_HOME" -mindepth 1 \
+    | awk -v prefix="$SOURCE_CODEX_HOME/" '{ sub("^" prefix, "", $0); print $0 }' \
+    | sort > "$DEST_FULL_HOME_MANIFEST"
+
+  say "Updated full snapshot: $DEST_FULL_HOME_ARCHIVE_B64"
+  say "Updated full snapshot checksum: $DEST_FULL_HOME_ARCHIVE_SHA256"
+  say "Updated full snapshot manifest: $DEST_FULL_HOME_MANIFEST"
 fi
 
 say "Export complete"
@@ -207,7 +266,5 @@ say "Updated: $DEST_PROJECT_TRUST_SNAPSHOT"
 say "Updated: $DEST_TOOLCHAIN_LOCK"
 say "Updated: $DEST_CUSTOM_MANIFEST"
 say "Updated: $DEST_CUSTOM_ARCHIVE_B64"
-if [[ -f "$DEST_CUSTOM_ARCHIVE_SHA256" ]]; then
-  say "Updated: $DEST_CUSTOM_ARCHIVE_SHA256"
-fi
+say "Updated: $DEST_CUSTOM_ARCHIVE_SHA256"
 say "Packed skills: ${#skills_to_pack[@]}"

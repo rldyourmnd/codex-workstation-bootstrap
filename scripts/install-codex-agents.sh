@@ -12,6 +12,8 @@ if [[ "${1:-}" == "--dry-run" ]]; then
 fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+
 SRC_DIR="$ROOT_DIR/skills/codex-agents"
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 DEST_DIR="$CODEX_HOME_DIR/skills"
@@ -29,7 +31,11 @@ if ! command -v rsync >/dev/null 2>&1; then
   exit 1
 fi
 
-mapfile -t agent_dirs < <(find "$SRC_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+agent_dirs=()
+while IFS= read -r dir; do
+  agent_dirs+=("$dir")
+done < <(list_top_level_dirs "$SRC_DIR")
+
 if [[ ${#agent_dirs[@]} -eq 0 ]]; then
   err "No agent skill directories found in $SRC_DIR"
   exit 1

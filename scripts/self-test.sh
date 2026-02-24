@@ -24,8 +24,10 @@ for f in \
   scripts/sync-codex-version.sh \
   scripts/render-portable-rules.sh \
   scripts/os/common/platform.sh \
-  scripts/os/macos/ensure-codex.sh \
-  scripts/os/linux/ensure-codex.sh; do
+  scripts/os/macos/install/ensure-codex.sh \
+  scripts/os/linux/install/ensure-codex.sh \
+  scripts/os/macos/install/ensure-claude-code.sh \
+  scripts/os/linux/install/ensure-claude-code.sh; do
   bash -n "$f"
 done
 say "Shell syntax: OK"

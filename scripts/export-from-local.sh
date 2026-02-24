@@ -71,10 +71,10 @@ DEST_TOOLCHAIN_LOCK="$ROOT_DIR/codex/meta/toolchain.lock"
 RULES_RENDERER="$ROOT_DIR/scripts/render-portable-rules.sh"
 
 SOURCE_PLATFORM="$(platform_id)"
-DEST_OS_DIR="$ROOT_DIR/codex/os/$SOURCE_PLATFORM"
-DEST_FULL_HOME_ARCHIVE_B64="$DEST_OS_DIR/full-codex-home.tar.gz.b64"
-DEST_FULL_HOME_ARCHIVE_SHA256="$DEST_OS_DIR/full-codex-home.sha256"
-DEST_FULL_HOME_MANIFEST="$DEST_OS_DIR/full-codex-home.manifest.txt"
+DEST_OS_DIR="$ROOT_DIR/codex/os/$SOURCE_PLATFORM/snapshots/full-home"
+DEST_FULL_HOME_ARCHIVE_B64="$DEST_OS_DIR/archive.tar.gz.b64"
+DEST_FULL_HOME_ARCHIVE_SHA256="$DEST_OS_DIR/archive.sha256"
+DEST_FULL_HOME_MANIFEST="$DEST_OS_DIR/manifest.txt"
 
 TMP_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_DIR"; }

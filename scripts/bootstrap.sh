@@ -12,6 +12,7 @@ APPLY_PROJECT_TRUST=true
 SYNC_CODEX_VERSION=true
 STRICT_TOOLCHAIN=true
 RESTORE_FULL_HOME=false
+INSTALL_CLAUDE_CODE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -51,9 +52,13 @@ while [[ $# -gt 0 ]]; do
       RESTORE_FULL_HOME=true
       shift
       ;;
+    --with-claude-code)
+      INSTALL_CLAUDE_CODE=true
+      shift
+      ;;
     *)
       echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/bootstrap.sh [--skip-curated] [--no-force] [--no-clean-skills] [--portable-rules] [--skip-project-trust] [--no-sync-codex-version] [--no-strict-toolchain] [--full-home]"
+      echo "Usage: scripts/bootstrap.sh [--skip-curated] [--no-force] [--no-clean-skills] [--portable-rules] [--skip-project-trust] [--no-sync-codex-version] [--no-strict-toolchain] [--full-home] [--with-claude-code]"
       exit 1
       ;;
   esac
@@ -66,13 +71,49 @@ expected_codex="$(
   grep -E '^CODEX_VERSION=' "$ROOT_DIR/codex/meta/toolchain.lock" | head -n1 | cut -d'=' -f2- || true
 )"
 platform="$(platform_id)"
-os_setup_script="$ROOT_DIR/scripts/os/$platform/ensure-codex.sh"
+os_setup_script="$ROOT_DIR/scripts/os/$platform/install/ensure-codex.sh"
+os_setup_script_ps1="$ROOT_DIR/scripts/os/$platform/install/ensure-codex.ps1"
+claude_setup_script="$ROOT_DIR/scripts/os/$platform/install/ensure-claude-code.sh"
+claude_setup_script_ps1="$ROOT_DIR/scripts/os/$platform/install/ensure-claude-code.ps1"
+
+run_powershell_script() {
+  local script="$1"
+  shift || true
+  if command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$script" "$@"
+    return $?
+  fi
+  if command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -ExecutionPolicy Bypass -File "$script" "$@"
+    return $?
+  fi
+  return 127
+}
 
 if [[ -x "$os_setup_script" ]]; then
-  say "Running OS bootstrap: scripts/os/$platform/ensure-codex.sh"
+  say "Running OS bootstrap: scripts/os/$platform/install/ensure-codex.sh"
   "$os_setup_script" --expected-version "${expected_codex:-unknown}"
+elif [[ -f "$os_setup_script_ps1" ]]; then
+  say "Running OS bootstrap: scripts/os/$platform/install/ensure-codex.ps1"
+  if ! run_powershell_script "$os_setup_script_ps1" -ExpectedVersion "${expected_codex:-unknown}"; then
+    warn "PowerShell bootstrap failed or PowerShell unavailable on this shell"
+  fi
 else
   warn "No OS bootstrap script found for platform '$platform'"
+fi
+
+if $INSTALL_CLAUDE_CODE; then
+  if [[ -x "$claude_setup_script" ]]; then
+    say "Running Claude Code bootstrap: scripts/os/$platform/install/ensure-claude-code.sh"
+    "$claude_setup_script"
+  elif [[ -f "$claude_setup_script_ps1" ]]; then
+    say "Running Claude Code bootstrap: scripts/os/$platform/install/ensure-claude-code.ps1"
+    if ! run_powershell_script "$claude_setup_script_ps1"; then
+      warn "Claude Code PowerShell bootstrap failed or PowerShell unavailable"
+    fi
+  else
+    warn "No Claude Code bootstrap script for platform '$platform'"
+  fi
 fi
 
 if [[ -z "${CONTEXT7_API_KEY:-}" ]]; then

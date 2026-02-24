@@ -48,11 +48,14 @@ if [[ "$current" == "$expected" ]]; then
 fi
 
 platform="$(platform_id)"
+windows_ps1="$ROOT_DIR/scripts/os/windows/install/ensure-codex.ps1"
 
 if ! $APPLY; then
   warn "Codex version mismatch: expected $expected, got $current"
   if [[ "$platform" == "macos" ]]; then
-    say "Run: scripts/os/macos/ensure-codex.sh --expected-version $expected"
+    say "Run: scripts/os/macos/install/ensure-codex.sh --expected-version $expected"
+  elif [[ "$platform" == "windows" ]]; then
+    say "Run (PowerShell): scripts/os/windows/install/ensure-codex.ps1 -ExpectedVersion $expected"
   else
     say "Run: npm i -g @openai/codex@$expected"
   fi
@@ -60,7 +63,16 @@ if ! $APPLY; then
 fi
 
 if [[ "$platform" == "macos" ]]; then
-  "$ROOT_DIR/scripts/os/macos/ensure-codex.sh" --expected-version "$expected"
+  "$ROOT_DIR/scripts/os/macos/install/ensure-codex.sh" --expected-version "$expected"
+elif [[ "$platform" == "windows" ]]; then
+  if command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$windows_ps1" -ExpectedVersion "$expected"
+  elif command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -ExecutionPolicy Bypass -File "$windows_ps1" -ExpectedVersion "$expected"
+  else
+    err "PowerShell is required on Windows to run $windows_ps1"
+    exit 1
+  fi
 else
   if ! command -v npm >/dev/null 2>&1; then
     err "npm is required to install codex on non-macOS systems"

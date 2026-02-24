@@ -26,10 +26,11 @@ CURATED_MANIFEST="$ROOT_DIR/codex/skills/curated-manifest.txt"
 AGENT_SKILLS_SRC="$ROOT_DIR/skills/codex-agents"
 SKILL_INSTALLER="$CODEX_HOME_DIR/skills/.system/skill-installer/scripts/install-skill-from-github.py"
 PLATFORM_ID="$(platform_id)"
-OS_SNAPSHOT_DIR="$ROOT_DIR/codex/os/$PLATFORM_ID"
-FULL_HOME_ARCHIVE_B64="$OS_SNAPSHOT_DIR/full-codex-home.tar.gz.b64"
-FULL_HOME_SHA256="$OS_SNAPSHOT_DIR/full-codex-home.sha256"
-FULL_HOME_MANIFEST="$OS_SNAPSHOT_DIR/full-codex-home.manifest.txt"
+OS_SNAPSHOT_DIR="$ROOT_DIR/codex/os/$PLATFORM_ID/snapshots/full-home"
+FULL_HOME_ARCHIVE_B64="$OS_SNAPSHOT_DIR/archive.tar.gz.b64"
+FULL_HOME_SHA256="$OS_SNAPSHOT_DIR/archive.sha256"
+FULL_HOME_MANIFEST="$OS_SNAPSHOT_DIR/manifest.txt"
+LEGACY_OS_SNAPSHOT_DIR="$ROOT_DIR/codex/os/$PLATFORM_ID"
 
 FORCE=false
 DRY_RUN=false
@@ -127,10 +128,22 @@ for tool in sed tar base64 rsync; do
 done
 
 if ! command -v codex >/dev/null 2>&1; then
-  warn "codex CLI not found in PATH. Run: scripts/os/$PLATFORM_ID/ensure-codex.sh"
+  warn "codex CLI not found in PATH. Run platform installer under scripts/os/$PLATFORM_ID/install/"
 fi
 
 mkdir -p "$CODEX_HOME_DIR" "$TARGET_RULES_DIR" "$TARGET_SKILLS_DIR"
+
+if [[ ! -f "$FULL_HOME_ARCHIVE_B64" ]]; then
+  legacy_archive="$LEGACY_OS_SNAPSHOT_DIR/full-codex-home.tar.gz.b64"
+  legacy_sha="$LEGACY_OS_SNAPSHOT_DIR/full-codex-home.sha256"
+  legacy_manifest="$LEGACY_OS_SNAPSHOT_DIR/full-codex-home.manifest.txt"
+  if [[ -f "$legacy_archive" ]]; then
+    warn "Using legacy full-home snapshot path: $legacy_archive"
+    FULL_HOME_ARCHIVE_B64="$legacy_archive"
+    FULL_HOME_SHA256="$legacy_sha"
+    FULL_HOME_MANIFEST="$legacy_manifest"
+  fi
+fi
 
 if $RESTORE_FULL_HOME; then
   if [[ ! -f "$FULL_HOME_ARCHIVE_B64" ]]; then

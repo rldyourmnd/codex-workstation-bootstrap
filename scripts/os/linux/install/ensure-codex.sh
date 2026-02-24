@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
 
 EXPECTED_VERSION=""
@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/os/linux/ensure-codex.sh [--expected-version <version>]"
+      echo "Usage: scripts/os/linux/install/ensure-codex.sh [--expected-version <version>]"
       exit 1
       ;;
   esac

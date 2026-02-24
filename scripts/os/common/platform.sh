@@ -4,12 +4,28 @@ platform_id() {
   case "$(uname -s)" in
     Darwin) printf 'macos\n' ;;
     Linux) printf 'linux\n' ;;
+    MINGW*|MSYS*|CYGWIN*) printf 'windows\n' ;;
     *) printf 'unknown\n' ;;
   esac
 }
 
 is_macos() {
   [[ "$(platform_id)" == "macos" ]]
+}
+
+is_linux() {
+  [[ "$(platform_id)" == "linux" ]]
+}
+
+is_windows() {
+  [[ "$(platform_id)" == "windows" ]]
+}
+
+is_wsl() {
+  if ! is_linux; then
+    return 1
+  fi
+  grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null
 }
 
 sed_inplace() {

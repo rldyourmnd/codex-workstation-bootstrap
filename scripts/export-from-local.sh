@@ -7,6 +7,8 @@ source "$ROOT_DIR/scripts/os/common/platform.sh"
 SOURCE_CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 SOURCE_PATH_SET=false
 EXPORT_FULL_HOME=false
+ALLOW_EMPTY_AGENTS=false
+ALLOW_EMPTY_SKILLS=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -23,8 +25,16 @@ while [[ $# -gt 0 ]]; do
       EXPORT_FULL_HOME=true
       shift
       ;;
+    --allow-empty-agents)
+      ALLOW_EMPTY_AGENTS=true
+      shift
+      ;;
+    --allow-empty-skills)
+      ALLOW_EMPTY_SKILLS=true
+      shift
+      ;;
     --help)
-      echo "Usage: scripts/export-from-local.sh [--source <path-to-codex-home>] [--with-full-home]"
+      echo "Usage: scripts/export-from-local.sh [--source <path-to-codex-home>] [--with-full-home] [--allow-empty-agents] [--allow-empty-skills]"
       exit 0
       ;;
     *)
@@ -148,6 +158,16 @@ PROJECTS
 fi
 
 if [[ -f "$SOURCE_GLOBAL_AGENTS" ]]; then
+  if ! grep -q '[^[:space:]]' "$SOURCE_GLOBAL_AGENTS"; then
+    if $ALLOW_EMPTY_AGENTS; then
+      warn "Source global AGENTS is empty. Keeping empty snapshot due --allow-empty-agents."
+    else
+      err "Source global AGENTS is empty: $SOURCE_GLOBAL_AGENTS"
+      err "Refusing to overwrite codex/agents/global.AGENTS.md with empty content."
+      err "Use --allow-empty-agents only if this is intentional."
+      exit 1
+    fi
+  fi
   cp "$SOURCE_GLOBAL_AGENTS" "$DEST_GLOBAL_AGENTS"
   say "Updated: $DEST_GLOBAL_AGENTS"
 else
@@ -213,10 +233,17 @@ done < <(
 
 mkdir -p "$TMP_DIR/custom"
 if [[ ${#skills_to_pack[@]} -eq 0 ]]; then
-  warn "No non-system skills found under $SOURCE_SKILLS_DIR"
-  cat > "$DEST_CUSTOM_MANIFEST" <<'MANIFEST'
+  if $ALLOW_EMPTY_SKILLS; then
+    warn "No non-system skills found under $SOURCE_SKILLS_DIR (allowed by --allow-empty-skills)"
+    cat > "$DEST_CUSTOM_MANIFEST" <<'MANIFEST'
 # No non-system skills were found during last export.
 MANIFEST
+  else
+    err "No non-system skills found under $SOURCE_SKILLS_DIR"
+    err "Refusing to overwrite codex/skills snapshot with empty content."
+    err "Use --allow-empty-skills only if this is intentional."
+    exit 1
+  fi
 else
   for skill in "${skills_to_pack[@]}"; do
     if [[ ! -f "$SOURCE_SKILLS_DIR/$skill/SKILL.md" ]]; then
@@ -233,9 +260,9 @@ find "$TMP_DIR/custom" -type d -name '__pycache__' -prune -exec rm -rf {} +
 find "$TMP_DIR/custom" -type d -name '.git' -prune -exec rm -rf {} +
 
 if tar --help 2>/dev/null | grep -q -- '--sort'; then
-  tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$TMP_DIR/custom" -czf "$TMP_DIR/custom-skills.tar.gz" .
+  COPYFILE_DISABLE=1 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$TMP_DIR/custom" -czf "$TMP_DIR/custom-skills.tar.gz" .
 else
-  tar -C "$TMP_DIR/custom" -czf "$TMP_DIR/custom-skills.tar.gz" .
+  COPYFILE_DISABLE=1 tar -C "$TMP_DIR/custom" -czf "$TMP_DIR/custom-skills.tar.gz" .
 fi
 base64_encode_nolinewrap "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_B64"
 sha256_file "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_SHA256"
@@ -243,9 +270,9 @@ sha256_file "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_SHA256"
 if $EXPORT_FULL_HOME; then
   full_archive="$TMP_DIR/full-codex-home.tar.gz"
   if tar --help 2>/dev/null | grep -q -- '--sort'; then
-    tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
+    COPYFILE_DISABLE=1 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
   else
-    tar -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
+    COPYFILE_DISABLE=1 tar -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
   fi
 
   base64_encode_nolinewrap "$full_archive" > "$DEST_FULL_HOME_ARCHIVE_B64"

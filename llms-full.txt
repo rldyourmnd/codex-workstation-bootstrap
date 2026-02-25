@@ -1,0 +1,70 @@
+# better-codex (Full machine-readable context)
+
+## Summary
+
+better-codex is an OS-structured Codex environment mirror focused on macOS production readiness.
+It provides deterministic install, verification, and export workflows, with strict secret hygiene and strict hierarchy boundaries.
+
+## Current baseline
+
+- Target OS payload: macOS
+- MCP baseline: 6 (`context7`, `sequential-thinking`, `github`, `shadcn`, `playwright`, `serena`)
+- Non-system skills: 33 total
+- Custom skills: 24 (`codex/os/macos/runtime/skills/custom/*`)
+- Shared profiles: 9 (`codex/os/common/agents/codex-agents/*`)
+- Overlap policy: forbidden between shared and custom skill groups
+
+## Canonical file map
+
+- `/README.md` - primary documentation and quickstart
+- `/CHANGELOG.md` - release history
+- `/SECURITY.md` - vulnerability reporting policy
+- `/CONTRIBUTING.md` - contribution workflow
+- `/docs/setup/PORTABLE_SETUP.md` - portable setup reference
+- `/docs/setup/PROD_RUNBOOK.md` - production restore runbook
+- `/docs/setup/os/macos.md` - macOS setup specifics
+- `/codex/os/macos/runtime/config/config.template.toml` - config template with placeholders
+- `/codex/os/macos/runtime/config/projects.trust.snapshot.toml` - trust snapshot template
+- `/codex/os/macos/runtime/agents/global.AGENTS.md` - global runtime policy snapshot
+- `/codex/os/macos/runtime/rules/default.rules` - portable rules
+- `/codex/os/macos/runtime/rules/default.rules.source.snapshot` - exact source rules snapshot
+- `/codex/os/macos/runtime/meta/toolchain.lock` - toolchain lock snapshot
+- `/codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt` - custom skill canonical list
+- `/codex/os/common/agents/codex-agents/README.md` - shared profile docs
+
+## Script contracts
+
+- `/scripts/bootstrap.sh`
+- Installs required CLI layer and runs install/verify pipeline.
+
+- `/scripts/install.sh`
+- Installs selected runtime payload into `$CODEX_HOME`.
+- Enforces strict no-overlap between shared profiles and custom skills.
+- Supports `--rules-mode exact|portable`.
+
+- `/scripts/verify.sh`
+- Validates MCP presence, config substitution, rules consistency, and skill hierarchy integrity.
+
+- `/scripts/export-from-local.sh`
+- Exports local Codex state into repository payload (macOS canonical target).
+- Sanitizes config placeholders and rejects detected token-like values.
+
+- `/scripts/self-test.sh`
+- Performs clean-room installation and deterministic assertions.
+
+## Security model
+
+- No real credentials in repository templates.
+- Placeholder-only secrets in config templates.
+- Snapshot export sanitization for known token patterns.
+- Security policy and private disclosure path in `SECURITY.md`.
+
+## Intended discovery terms
+
+- codex configuration
+- codex mcp setup
+- macos development bootstrap
+- ai cli workstation setup
+- deterministic environment provisioning
+- codex skills baseline
+- open-source developer environment template

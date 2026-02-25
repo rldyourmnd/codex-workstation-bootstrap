@@ -1,0 +1,41 @@
+# better-codex
+> Production-ready Codex bootstrap and mirror for macOS with strict OS-first payload hierarchy.
+
+## Canonical entrypoints
+
+- /README.md
+- /CONTRIBUTING.md
+- /SECURITY.md
+- /CHANGELOG.md
+
+## Setup docs
+
+- /docs/setup/PORTABLE_SETUP.md
+- /docs/setup/PROD_RUNBOOK.md
+- /docs/setup/os/macos.md
+
+## Runtime payload
+
+- /codex/os/macos/runtime/config/config.template.toml
+- /codex/os/macos/runtime/agents/global.AGENTS.md
+- /codex/os/macos/runtime/rules/default.rules
+- /codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt
+- /codex/os/common/agents/codex-agents/README.md
+
+## Automation scripts
+
+- /scripts/bootstrap.sh
+- /scripts/install.sh
+- /scripts/verify.sh
+- /scripts/export-from-local.sh
+- /scripts/self-test.sh
+
+## Project intent keywords
+
+- codex
+- mcp
+- macos bootstrap
+- developer environment
+- agentic coding
+- deterministic setup
+- workstation provisioning

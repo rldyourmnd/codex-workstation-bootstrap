@@ -1,37 +1,60 @@
 # better-codex
 
-Clean OS-structured Codex mirror with macOS production payload.
+[![Release](https://img.shields.io/github/v/release/rldyourmnd/better-codex?sort=semver)](https://github.com/rldyourmnd/better-codex/releases)
+[![CI](https://github.com/rldyourmnd/better-codex/actions/workflows/ci.yml/badge.svg)](https://github.com/rldyourmnd/better-codex/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Stars](https://img.shields.io/github/stars/rldyourmnd/better-codex)](https://github.com/rldyourmnd/better-codex/stargazers)
+[![Forks](https://img.shields.io/github/forks/rldyourmnd/better-codex)](https://github.com/rldyourmnd/better-codex/network/members)
+[![Issues](https://img.shields.io/github/issues/rldyourmnd/better-codex)](https://github.com/rldyourmnd/better-codex/issues)
 
-This repository stores Codex baseline as plain files (no tar/base64 snapshots).
+Production-ready Codex bootstrap and mirror for macOS with strict OS hierarchy, deterministic installs, and clean export/import flows.
 
-## Canonical layout
+## Why this repository
 
-- `codex/os/macos/runtime/config/*` - config template + project trust snapshot
-- `codex/os/macos/runtime/agents/global.AGENTS.md` - global AGENTS snapshot
-- `codex/os/macos/runtime/rules/*` - portable + exact rules snapshots
-- `codex/os/macos/runtime/skills/custom/*` - direct custom skills (24)
-- `codex/os/macos/runtime/skills/manifests/*` - skill manifests
-- `codex/os/macos/runtime/meta/toolchain.lock` - toolchain lock
-- `codex/os/common/agents/codex-agents/*` - shared codex-agent profiles (9)
+- Enterprise-grade baseline for fast workstation bootstrap.
+- Strict separation of runtime payload by OS.
+- Secret-safe templates with placeholders only.
+- Reproducible install, verify, and export pipelines.
+- Optimized structure for humans and GenAI retrieval systems.
 
-Linux/Windows payload folders are kept as placeholders for clean expansion.
-Total non-system skills baseline: 33 (24 custom + 9 shared profiles), with strict no-overlap between groups.
+## Core baseline
 
-## MCP baseline (6)
+- MCP servers: `context7`, `sequential-thinking`, `github`, `shadcn`, `playwright`, `serena`
+- Skills: `24` custom + `9` shared agent profiles (`33` total non-system)
+- Global policy snapshot: `codex/os/macos/runtime/agents/global.AGENTS.md`
+- Config defaults: `approval_policy = "never"`, `sandbox_mode = "danger-full-access"`
 
-- context7
-- sequential-thinking
-- github
-- shadcn
-- playwright
-- serena
-
-All secrets are placeholders in repo templates:
+All sensitive values remain placeholders:
 
 - `__CONTEXT7_API_KEY__`
 - `__GITHUB_MCP_TOKEN__`
 
-## Restore on macOS
+## Repository hierarchy
+
+```text
+codex/
+  os/
+    common/
+      agents/codex-agents/            # 9 shared profiles
+    macos/
+      runtime/
+        config/                        # config.template + trust snapshot
+        agents/                        # global.AGENTS.md
+        rules/                         # portable/exact rules
+        skills/
+          custom/                      # 24 custom skills
+          manifests/                   # canonical skill manifests
+        meta/                          # toolchain lock
+    linux/runtime/.gitkeep
+    windows/runtime/.gitkeep
+scripts/
+  install.sh
+  verify.sh
+  export-from-local.sh
+  bootstrap.sh
+```
+
+## Quick start (macOS)
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
@@ -39,7 +62,7 @@ export GITHUB_MCP_TOKEN='gho_...'
 scripts/bootstrap.sh --skip-curated
 ```
 
-## Direct install (without bootstrap)
+## Deterministic install
 
 ```bash
 scripts/install.sh --force --skip-curated --clean-skills --rules-mode exact
@@ -47,25 +70,27 @@ scripts/verify.sh
 scripts/codex-activate.sh --check-only
 ```
 
-## Export from current local Codex
+## Export local Codex into repository
 
 ```bash
 scripts/export-from-local.sh
 ```
 
-This refreshes:
+## Validation gates
 
-- config template (sanitized)
-- AGENTS snapshot
-- rules snapshots
-- `codex/os/macos/runtime/skills/custom/*`
-- `codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt`
-- `codex/os/macos/runtime/meta/toolchain.lock`
-- matching shared profiles in `codex/os/common/agents/codex-agents/*`
+- `scripts/check-toolchain.sh --strict-codex-only`
+- `scripts/audit-codex-agents.sh`
+- `scripts/self-test.sh`
 
-## OS structure
+## OSS and security
 
-- macOS scripts: `scripts/os/macos/install/*`
-- Linux scripts: `scripts/os/linux/install/*`
-- Windows scripts: `scripts/os/windows/install/*`
-- Runtime payload selector: `scripts/os/common/layout.sh` (`BETTER_CODEX_PROFILE_OS=<os>`)
+- [Contributing](./CONTRIBUTING.md)
+- [Security policy](./SECURITY.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Support](./SUPPORT.md)
+- [Changelog](./CHANGELOG.md)
+
+## GenAI indexing
+
+- [`llms.txt`](./llms.txt) for concise machine-readable discovery.
+- [`llms-full.txt`](./llms-full.txt) for expanded technical retrieval context.

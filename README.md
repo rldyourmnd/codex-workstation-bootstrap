@@ -1,15 +1,20 @@
 # better-codex
 
-Clean macOS-first Codex mirror with direct files only.
+Clean OS-structured Codex mirror with macOS production payload.
 
-This repository stores your Codex baseline as plain files (no tar/base64 snapshots):
+This repository stores Codex baseline as plain files (no tar/base64 snapshots).
 
-- `codex/config/config.template.toml` - sanitized config template with 6 MCP definitions
-- `codex/agents/global.AGENTS.md` - global AGENTS policy snapshot
-- `codex/rules/default.rules` - portable rules
-- `codex/rules/default.rules.source.snapshot` - exact source rules snapshot
-- `codex/skills/custom/*` - direct custom skill directories (33 skills)
-- `skills/codex-agents/*` - 9 repository-owned agent skills
+## Canonical layout
+
+- `codex/os/macos/runtime/config/*` - config template + project trust snapshot
+- `codex/os/macos/runtime/agents/global.AGENTS.md` - global AGENTS snapshot
+- `codex/os/macos/runtime/rules/*` - portable + exact rules snapshots
+- `codex/os/macos/runtime/skills/custom/*` - direct custom skills
+- `codex/os/macos/runtime/skills/manifests/*` - skill manifests
+- `codex/os/macos/runtime/meta/toolchain.lock` - toolchain lock
+- `codex/os/common/agents/codex-agents/*` - shared codex-agent profiles
+
+Linux/Windows payload folders are kept as placeholders for clean expansion.
 
 ## MCP baseline (6)
 
@@ -52,12 +57,14 @@ This refreshes:
 - config template (sanitized)
 - AGENTS snapshot
 - rules snapshots
-- `codex/skills/custom/*` direct files
-- `codex/skills/custom-skills.manifest.txt`
-- `codex/meta/toolchain.lock`
+- `codex/os/macos/runtime/skills/custom/*`
+- `codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt`
+- `codex/os/macos/runtime/meta/toolchain.lock`
+- matching shared profiles in `codex/os/common/agents/codex-agents/*`
 
 ## OS structure
 
-- macOS: production path (`scripts/os/macos/install/*`)
-- Linux: maintained installer path (`scripts/os/linux/install/*`)
-- Windows: skeleton (`scripts/os/windows/install/*`)
+- macOS scripts: `scripts/os/macos/install/*`
+- Linux scripts: `scripts/os/linux/install/*`
+- Windows scripts: `scripts/os/windows/install/*`
+- Runtime payload selector: `scripts/os/common/layout.sh` (`BETTER_CODEX_PROFILE_OS=<os>`)

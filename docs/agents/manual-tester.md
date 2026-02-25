@@ -1,7 +1,7 @@
 # manual-tester
 
 - Status: Active (skill-backed)
-- Skill: `manual-tester` (`skills/codex-agents/manual-tester/SKILL.md`)
+- Skill: `manual-tester` (`codex/os/common/agents/codex-agents/manual-tester/SKILL.md`)
 - Mission: Validate end-to-end behavior via realistic user flows.
 - Primary tools: Playwright MCP, webapp-testing skill.
 - Inputs: target URLs, flows, acceptance criteria.

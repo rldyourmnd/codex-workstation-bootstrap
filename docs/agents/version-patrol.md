@@ -1,7 +1,7 @@
 # version-patrol
 
 - Status: Active (skill-backed)
-- Skill: `version-patrol` (`skills/codex-agents/version-patrol/SKILL.md`)
+- Skill: `version-patrol` (`codex/os/common/agents/codex-agents/version-patrol/SKILL.md`)
 - Mission: Check dependency/tool/runtime freshness and compatibility.
 - Primary tools: Context7, web search, repository manifests.
 - Inputs: dependency files, runtime/toolchain versions.

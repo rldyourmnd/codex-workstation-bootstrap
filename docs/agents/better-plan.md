@@ -1,7 +1,7 @@
 # better-plan
 
 - Status: Active (skill-backed)
-- Skill: `better-plan` (`skills/codex-agents/better-plan/SKILL.md`)
+- Skill: `better-plan` (`codex/os/common/agents/codex-agents/better-plan/SKILL.md`)
 - Mission: Build tactical implementation plans with verifiable checkpoints.
 - Primary tools: Sequential Thinking, Serena MCP, search-strategy skill.
 - Inputs: target outcome, constraints, scope boundaries.

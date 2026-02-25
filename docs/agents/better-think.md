@@ -1,7 +1,7 @@
 # better-think
 
 - Status: Active (skill-backed)
-- Skill: `better-think` (`skills/codex-agents/better-think/SKILL.md`)
+- Skill: `better-think` (`codex/os/common/agents/codex-agents/better-think/SKILL.md`)
 - Mission: Deep multi-pass reasoning for high-impact design decisions.
 - Primary tools: Sequential Thinking, Context7, Serena memories.
 - Inputs: problem statement, constraints, success criteria.

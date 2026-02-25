@@ -1,7 +1,7 @@
 # better-code-review
 
 - Status: Active (skill-backed)
-- Skill: `better-code-review` (`skills/codex-agents/better-code-review/SKILL.md`)
+- Skill: `better-code-review` (`codex/os/common/agents/codex-agents/better-code-review/SKILL.md`)
 - Mission: Risk-first review of changes (bugs, regressions, security, tests).
 - Primary tools: code-reviewer skill, Serena MCP, Git diff.
 - Inputs: diff scope, branch/commit references.

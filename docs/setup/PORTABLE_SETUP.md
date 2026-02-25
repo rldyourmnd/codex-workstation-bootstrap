@@ -4,12 +4,13 @@ This repository restores Codex state from direct files, not archives.
 
 ## Scope
 
-- `codex/config/config.template.toml`
-- `codex/agents/global.AGENTS.md`
-- `codex/rules/default.rules`
-- `codex/rules/default.rules.source.snapshot`
-- `codex/skills/custom/*` (33 direct skill directories)
-- `skills/codex-agents/*` (9 agent skills)
+- `codex/os/macos/runtime/config/config.template.toml`
+- `codex/os/macos/runtime/agents/global.AGENTS.md`
+- `codex/os/macos/runtime/rules/default.rules`
+- `codex/os/macos/runtime/rules/default.rules.source.snapshot`
+- `codex/os/macos/runtime/skills/custom/*`
+- `codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt`
+- `codex/os/common/agents/codex-agents/*`
 
 ## Restore on target machine
 

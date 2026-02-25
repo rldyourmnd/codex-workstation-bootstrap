@@ -1,7 +1,7 @@
 # Codex Agent Profiles
 
 This directory defines Codex-native agent profiles for routing and role separation.
-Executable agent implementations are provided as skills in `skills/codex-agents/*`.
+Executable agent implementations are provided as skills in `codex/os/common/agents/codex-agents/*`.
 
 Status model:
 

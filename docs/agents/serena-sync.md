@@ -1,7 +1,7 @@
 # serena-sync
 
 - Status: Active (skill-backed)
-- Skill: `serena-sync` (`skills/codex-agents/serena-sync/SKILL.md`)
+- Skill: `serena-sync` (`codex/os/common/agents/codex-agents/serena-sync/SKILL.md`)
 - Mission: Maintain freshness and structure of `.serena/memories/*`.
 - Primary tools: Serena MCP, writing-rules skill.
 - Inputs: changed files, commit range, architecture deltas.

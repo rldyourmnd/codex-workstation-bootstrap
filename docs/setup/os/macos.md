@@ -1,5 +1,7 @@
 # macOS Setup
 
+Profile payload lives under `codex/os/macos/runtime/*`.
+
 ## 1. Install Codex
 
 ```bash

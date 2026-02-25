@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible bug or regression
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting.
+        Please provide enough detail to reproduce the issue.
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 15.x
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command used
+      placeholder: scripts/bootstrap.sh --skip-curated
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/output (redact secrets)
+      render: shell

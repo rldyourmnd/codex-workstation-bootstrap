@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Shell syntax check
+        run: |
+          bash -n scripts/*.sh
+          bash -n scripts/os/common/*.sh
+          bash -n scripts/os/macos/install/*.sh
+          bash -n scripts/os/linux/install/*.sh
+
+      - name: Validate TOML template
+        run: |
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = Path("codex/os/macos/runtime/config/config.template.toml")
+          data = tomllib.loads(p.read_text(encoding="utf-8"))
+          assert data.get("approval_policy") == "never"
+          assert data.get("sandbox_mode") == "danger-full-access"
+          print("config template OK")
+          PY
+
+      - name: Validate strict skill hierarchy
+        shell: bash
+        run: |
+          custom_count="$(find codex/os/macos/runtime/skills/custom -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+          manifest_count="$(grep -Ev '^\s*#|^\s*$' codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt | wc -l | tr -d ' ')"
+          shared_count="$(find codex/os/common/agents/codex-agents -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+          overlap="$(comm -12 <(find codex/os/common/agents/codex-agents -mindepth 1 -maxdepth 1 -type d | sed 's|.*/||' | sort) <(find codex/os/macos/runtime/skills/custom -mindepth 1 -maxdepth 1 -type d | sed 's|.*/||' | sort) | wc -l | tr -d ' ')"
+          test "$custom_count" = "24"
+          test "$manifest_count" = "24"
+          test "$shared_count" = "9"
+          test "$overlap" = "0"
+          echo "skill hierarchy OK"
+
+      - name: Validate secret placeholders
+        run: |
+          test "$(grep -c '__CONTEXT7_API_KEY__' codex/os/macos/runtime/config/config.template.toml)" -ge 1
+          test "$(grep -c '__GITHUB_MCP_TOKEN__' codex/os/macos/runtime/config/config.template.toml)" -ge 1
+          ! rg -n "ctx7sk-|gho_|ghp_|github_pat_" codex/os/macos/runtime/config
+          echo "secret template checks OK"

@@ -28,9 +28,10 @@ scripts/codex-activate.sh --check-only
 ## Parity model
 
 - 6 MCP in config template
-- direct custom skills (`codex/os/macos/runtime/skills/custom/*`)
-- codex-agent skills (`codex/os/common/agents/codex-agents/*`)
+- 24 direct custom skills (`codex/os/macos/runtime/skills/custom/*`)
+- 9 shared codex-agent skills (`codex/os/common/agents/codex-agents/*`)
 - global AGENTS snapshot from source machine
+- strict no-overlap between custom and shared skill groups
 
 ## Rollback
 

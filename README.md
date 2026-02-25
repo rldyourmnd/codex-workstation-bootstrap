@@ -9,12 +9,13 @@ This repository stores Codex baseline as plain files (no tar/base64 snapshots).
 - `codex/os/macos/runtime/config/*` - config template + project trust snapshot
 - `codex/os/macos/runtime/agents/global.AGENTS.md` - global AGENTS snapshot
 - `codex/os/macos/runtime/rules/*` - portable + exact rules snapshots
-- `codex/os/macos/runtime/skills/custom/*` - direct custom skills
+- `codex/os/macos/runtime/skills/custom/*` - direct custom skills (24)
 - `codex/os/macos/runtime/skills/manifests/*` - skill manifests
 - `codex/os/macos/runtime/meta/toolchain.lock` - toolchain lock
-- `codex/os/common/agents/codex-agents/*` - shared codex-agent profiles
+- `codex/os/common/agents/codex-agents/*` - shared codex-agent profiles (9)
 
 Linux/Windows payload folders are kept as placeholders for clean expansion.
+Total non-system skills baseline: 33 (24 custom + 9 shared profiles), with strict no-overlap between groups.
 
 ## MCP baseline (6)
 

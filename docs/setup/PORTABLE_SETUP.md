@@ -8,9 +8,9 @@ This repository restores Codex state from direct files, not archives.
 - `codex/os/macos/runtime/agents/global.AGENTS.md`
 - `codex/os/macos/runtime/rules/default.rules`
 - `codex/os/macos/runtime/rules/default.rules.source.snapshot`
-- `codex/os/macos/runtime/skills/custom/*`
+- `codex/os/macos/runtime/skills/custom/*` (24 custom skills)
 - `codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt`
-- `codex/os/common/agents/codex-agents/*`
+- `codex/os/common/agents/codex-agents/*` (9 shared agent profiles)
 
 ## Restore on target machine
 

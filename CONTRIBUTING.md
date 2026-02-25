@@ -1,4 +1,4 @@
-# Contributing to better-codex
+# Contributing to codex-workstation-bootstrap
 
 ## Scope
 

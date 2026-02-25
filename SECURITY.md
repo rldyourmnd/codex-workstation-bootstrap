@@ -9,7 +9,7 @@ Active security maintenance applies to the latest release tag.
 Please do not open public issues for security reports.
 
 - Preferred: GitHub Security Advisories (private report).
-- Fallback: email `danilsilantyevwork@gmail.com` with subject `SECURITY: better-codex`.
+- Fallback: email `danilsilantyevwork@gmail.com` with subject `SECURITY: codex-workstation-bootstrap`.
 
 ## Response targets
 

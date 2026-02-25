@@ -1,11 +1,11 @@
-# better-codex
+# codex-workstation-bootstrap
 
-[![Release](https://img.shields.io/github/v/release/rldyourmnd/better-codex?sort=semver)](https://github.com/rldyourmnd/better-codex/releases)
-[![CI](https://github.com/rldyourmnd/better-codex/actions/workflows/ci.yml/badge.svg)](https://github.com/rldyourmnd/better-codex/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/rldyourmnd/codex-workstation-bootstrap?sort=semver)](https://github.com/rldyourmnd/codex-workstation-bootstrap/releases)
+[![CI](https://github.com/rldyourmnd/codex-workstation-bootstrap/actions/workflows/ci.yml/badge.svg)](https://github.com/rldyourmnd/codex-workstation-bootstrap/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Stars](https://img.shields.io/github/stars/rldyourmnd/better-codex)](https://github.com/rldyourmnd/better-codex/stargazers)
-[![Forks](https://img.shields.io/github/forks/rldyourmnd/better-codex)](https://github.com/rldyourmnd/better-codex/network/members)
-[![Issues](https://img.shields.io/github/issues/rldyourmnd/better-codex)](https://github.com/rldyourmnd/better-codex/issues)
+[![Stars](https://img.shields.io/github/stars/rldyourmnd/codex-workstation-bootstrap)](https://github.com/rldyourmnd/codex-workstation-bootstrap/stargazers)
+[![Forks](https://img.shields.io/github/forks/rldyourmnd/codex-workstation-bootstrap)](https://github.com/rldyourmnd/codex-workstation-bootstrap/network/members)
+[![Issues](https://img.shields.io/github/issues/rldyourmnd/codex-workstation-bootstrap)](https://github.com/rldyourmnd/codex-workstation-bootstrap/issues)
 
 Production-ready Codex bootstrap and mirror for macOS with strict OS hierarchy, deterministic installs, and clean export/import flows.
 

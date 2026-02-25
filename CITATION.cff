@@ -1,11 +1,11 @@
 cff-version: 1.2.0
-title: "better-codex"
+title: "codex-workstation-bootstrap"
 message: "If you use this project, please cite it using this metadata."
 type: software
 authors:
   - family-names: "Silantyev"
     given-names: "Danil"
-repository-code: "https://github.com/rldyourmnd/better-codex"
+repository-code: "https://github.com/rldyourmnd/codex-workstation-bootstrap"
 license: "MIT"
 version: "v0.0.1"
 date-released: "2026-02-26"

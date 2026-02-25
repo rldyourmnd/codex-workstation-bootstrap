@@ -1,4 +1,4 @@
-# better-codex
+# codex-workstation-bootstrap
 > Production-ready Codex bootstrap and mirror for macOS with strict OS-first payload hierarchy.
 
 ## Canonical entrypoints

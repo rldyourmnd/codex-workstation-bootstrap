@@ -1,8 +1,8 @@
-# better-codex (Full machine-readable context)
+# codex-workstation-bootstrap (Full machine-readable context)
 
 ## Summary
 
-better-codex is an OS-structured Codex environment mirror focused on macOS production readiness.
+codex-workstation-bootstrap is an OS-structured Codex environment mirror focused on macOS production readiness.
 It provides deterministic install, verification, and export workflows, with strict secret hygiene and strict hierarchy boundaries.
 
 ## Current baseline

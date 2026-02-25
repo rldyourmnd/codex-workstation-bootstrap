@@ -11,7 +11,7 @@ TARGET_GLOBAL_AGENTS="$CODEX_HOME_DIR/AGENTS.md"
 TARGET_RULES_DIR="$CODEX_HOME_DIR/rules"
 TARGET_RULES_FILE="$TARGET_RULES_DIR/default.rules"
 TARGET_SKILLS_DIR="$CODEX_HOME_DIR/skills"
-RULES_MODE_FILE="$CODEX_HOME_DIR/.better-codex-rules-mode"
+RULES_MODE_FILE="$CODEX_HOME_DIR/.codex-workstation-bootstrap-rules-mode"
 SKILL_INSTALLER="$CODEX_HOME_DIR/skills/.system/skill-installer/scripts/install-skill-from-github.py"
 
 FORCE=false

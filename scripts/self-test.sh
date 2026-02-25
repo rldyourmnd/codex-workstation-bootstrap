@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
 source "$ROOT_DIR/scripts/os/common/layout.sh"
 
-TEST_HOME="/tmp/better-codex-selftest-home"
+TEST_HOME="/tmp/codex-workstation-bootstrap-selftest-home"
 PROFILE_ROOT="$(profile_runtime_root "macos")"
 MANIFEST_FILE="$PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
 
@@ -118,11 +118,11 @@ if grep -q '__HOME__' "$TEST_HOME/rules/default.rules"; then
   exit 1
 fi
 
-if [[ ! -f "$TEST_HOME/.better-codex-rules-mode" ]]; then
+if [[ ! -f "$TEST_HOME/.codex-workstation-bootstrap-rules-mode" ]]; then
   err "Missing installed rules mode marker"
   exit 1
 fi
-rules_mode="$(cat "$TEST_HOME/.better-codex-rules-mode")"
+rules_mode="$(cat "$TEST_HOME/.codex-workstation-bootstrap-rules-mode")"
 if [[ "$rules_mode" != "portable" && "$rules_mode" != "exact" ]]; then
   err "Invalid installed rules mode marker: $rules_mode"
   exit 1

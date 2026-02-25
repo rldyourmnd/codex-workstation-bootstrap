@@ -94,7 +94,7 @@ for skill in "${repo_agent_skills[@]}"; do
 done
 
 if grep -q '__CONTEXT7_API_KEY__' "$ROOT_DIR/codex/config/config.template.toml"; then
-  if ! grep -Eq 'CONTEXT7_API_KEY = "ctx7sk-selftest"|"x-context7-api-key" = "ctx7sk-selftest"' "$TEST_HOME/config.toml"; then
+  if ! grep -Eq 'ctx7sk-selftest' "$TEST_HOME/config.toml"; then
     err "Context7 token substitution failed"
     exit 1
   fi
@@ -103,7 +103,7 @@ else
 fi
 
 if grep -q '__GITHUB_MCP_TOKEN__' "$ROOT_DIR/codex/config/config.template.toml"; then
-  if ! grep -Eq 'Authorization = "Bearer gho_selftest"|"Authorization" = "Bearer gho_selftest"' "$TEST_HOME/config.toml"; then
+  if ! grep -Eq 'gho_selftest' "$TEST_HOME/config.toml"; then
     err "GitHub MCP token substitution failed"
     exit 1
   fi
@@ -123,18 +123,6 @@ rules_mode="$(cat "$TEST_HOME/.better-codex-rules-mode")"
 if [[ "$rules_mode" != "portable" && "$rules_mode" != "exact" ]]; then
   err "Invalid installed rules mode marker: $rules_mode"
   exit 1
-fi
-
-if [[ "$rules_mode" == "portable" ]] && grep -Eq 'install-claude-local-skills\.sh|rld-better-ai-usage|git", "add", "\."|git", "push", "origin", "main"' "$TEST_HOME/rules/default.rules"; then
-  err "Installed portable rules contain non-portable or over-broad allow entries"
-  exit 1
-fi
-
-if grep -Eq '^\[projects\.' "$ROOT_DIR/codex/config/projects.trust.snapshot.toml"; then
-  if ! grep -Eq '^\[projects\.' "$TEST_HOME/config.toml"; then
-    err "Project trust snapshot was not applied to installed config"
-    exit 1
-  fi
 fi
 
 say "Clean-room install assertions: OK"

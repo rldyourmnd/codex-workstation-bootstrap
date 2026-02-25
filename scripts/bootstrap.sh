@@ -11,7 +11,6 @@ RULES_MODE="exact"
 APPLY_PROJECT_TRUST=true
 SYNC_CODEX_VERSION=true
 STRICT_TOOLCHAIN=true
-RESTORE_FULL_HOME=false
 INSTALL_CLAUDE_CODE=false
 
 while [[ $# -gt 0 ]]; do
@@ -48,17 +47,13 @@ while [[ $# -gt 0 ]]; do
       STRICT_TOOLCHAIN=false
       shift
       ;;
-    --full-home)
-      RESTORE_FULL_HOME=true
-      shift
-      ;;
     --with-claude-code)
       INSTALL_CLAUDE_CODE=true
       shift
       ;;
     *)
       echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/bootstrap.sh [--skip-curated] [--no-force] [--no-clean-skills] [--portable-rules] [--skip-project-trust] [--no-sync-codex-version] [--no-strict-toolchain] [--full-home] [--with-claude-code]"
+      echo "Usage: scripts/bootstrap.sh [--skip-curated] [--no-force] [--no-clean-skills] [--portable-rules] [--skip-project-trust] [--no-sync-codex-version] [--no-strict-toolchain] [--with-claude-code]"
       exit 1
       ;;
   esac
@@ -67,9 +62,7 @@ done
 say() { echo "[BOOTSTRAP] $*"; }
 warn() { echo "[BOOTSTRAP][WARN] $*"; }
 
-expected_codex="$(
-  grep -E '^CODEX_VERSION=' "$ROOT_DIR/codex/meta/toolchain.lock" | head -n1 | cut -d'=' -f2- || true
-)"
+expected_codex="$({ grep -E '^CODEX_VERSION=' "$ROOT_DIR/codex/meta/toolchain.lock" || true; } | head -n1 | cut -d'=' -f2-)"
 platform="$(platform_id)"
 os_setup_script="$ROOT_DIR/scripts/os/$platform/install/ensure-codex.sh"
 os_setup_script_ps1="$ROOT_DIR/scripts/os/$platform/install/ensure-codex.ps1"
@@ -147,20 +140,9 @@ install_args+=(--rules-mode "$RULES_MODE")
 if ! $APPLY_PROJECT_TRUST; then
   install_args+=(--skip-project-trust)
 fi
-if $RESTORE_FULL_HOME; then
-  install_args+=(--restore-full-home)
-fi
 
 say "Running install.sh ${install_args[*]}"
 "$ROOT_DIR/scripts/install.sh" "${install_args[@]}"
-
-if $RESTORE_FULL_HOME; then
-  say "Running verify.sh --full-home"
-  "$ROOT_DIR/scripts/verify.sh" --full-home
-  say "Skipping audit-codex-agents.sh and codex-activate.sh in full-home mode"
-  say "Bootstrap complete"
-  exit 0
-fi
 
 say "Running verify.sh"
 "$ROOT_DIR/scripts/verify.sh"

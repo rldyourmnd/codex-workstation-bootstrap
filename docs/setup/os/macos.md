@@ -12,11 +12,11 @@ scripts/os/macos/install/ensure-codex.sh
 scripts/os/macos/install/ensure-claude-code.sh
 ```
 
-## 3. Restore Codex Mirror
+## 3. Restore Codex mirror
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
-export GITHUB_MCP_TOKEN='...'
+export GITHUB_MCP_TOKEN='gho_...'
 scripts/bootstrap.sh --skip-curated
 ```
 

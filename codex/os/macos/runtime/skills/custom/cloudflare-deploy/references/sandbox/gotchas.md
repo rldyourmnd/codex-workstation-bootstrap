@@ -144,7 +144,7 @@ const result = await sandbox.exec('python3 script.py', {
 
 ```typescript
 // ❌ NEVER hardcode secrets
-const token = 'ghp_abc123';
+const token = 'github_example_token';
 
 // ✅ Use environment secrets
 const token = env.GITHUB_TOKEN;

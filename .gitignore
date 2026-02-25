@@ -3,6 +3,8 @@
 *.token*
 .env
 .env.*
+.DS_Store
+Thumbs.db
 
 # Local Serena runtime state
 .serena/

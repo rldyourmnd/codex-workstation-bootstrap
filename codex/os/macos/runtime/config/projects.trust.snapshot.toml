@@ -1,2 +1,3 @@
-# No project trust entries were found during last export.
-# This file remains for deterministic structure across machines.
+[projects."__HOME__"]
+trust_level = "trusted"
+

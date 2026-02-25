@@ -8,3 +8,11 @@ Thumbs.db
 
 # Local Serena runtime state
 .serena/
+
+# AI assistant local artifacts
+**/AGENTS.md
+**/CLAUDE.md
+**/.claude/
+**/.serena/
+**/.cursor/
+**/.aider*

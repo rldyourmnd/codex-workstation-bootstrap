@@ -115,6 +115,18 @@ backup_if_exists() {
   fi
 }
 
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 install_skill_dir() {
   local src_root="$1"
   local skill="$2"
@@ -318,19 +330,30 @@ if [[ ${#custom_skills[@]} -eq 0 ]]; then
 fi
 
 missing_custom=0
+installed_custom=0
+overlap_skipped=0
 for skill in "${custom_skills[@]}"; do
+  if array_contains "$skill" "${shared_skills[@]}"; then
+    warn "Skipping custom skill overlapping with shared agent profile: $skill"
+    overlap_skipped=$((overlap_skipped + 1))
+    continue
+  fi
   if [[ ! -f "$CUSTOM_SKILLS_DIR/$skill/SKILL.md" ]]; then
     err "Manifest skill missing from snapshot: $skill"
     missing_custom=$((missing_custom + 1))
     continue
   fi
   install_skill_dir "$CUSTOM_SKILLS_DIR" "$skill"
+  installed_custom=$((installed_custom + 1))
 done
 if [[ $missing_custom -gt 0 ]]; then
   err "Missing $missing_custom skill(s) from snapshot manifest"
   exit 1
 fi
-say "Installed custom skills from manifest: ${#custom_skills[@]}"
+if [[ $overlap_skipped -gt 0 ]]; then
+  warn "Skipped overlapping custom skills: $overlap_skipped"
+fi
+say "Installed custom skills from manifest: $installed_custom"
 
 if ! $SKIP_CURATED; then
   if [[ -f "$SKILL_INSTALLER" && -f "$CURATED_MANIFEST" ]]; then

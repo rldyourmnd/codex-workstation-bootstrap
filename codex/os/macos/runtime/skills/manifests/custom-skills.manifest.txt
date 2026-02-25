@@ -1,9 +1,4 @@
 agent-development
-better-code-review
-better-debugger
-better-explorer
-better-plan
-better-think
 cloudflare-deploy
 code-reviewer
 codex-md-improver
@@ -12,10 +7,8 @@ create-project
 figma-implement-design
 frontend-design
 gh-address-comments
-github-server-sync
 hook-development
 init-project
-manual-tester
 pdf
 playwright
 pptx
@@ -23,11 +16,9 @@ search-strategy
 security-best-practices
 security-ownership-map
 security-threat-model
-serena-sync
 spreadsheet
 sql-queries
 status
-version-patrol
 webapp-testing
 writing-rules
 yeet

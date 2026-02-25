@@ -88,6 +88,18 @@ for tool in awk sed rsync; do
   require_tool "$tool"
 done
 
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 if [[ ! -x "$RULES_RENDERER" ]]; then
   err "Missing executable rules renderer: $RULES_RENDERER"
   exit 1
@@ -211,8 +223,18 @@ EOF_LOCK
 mkdir -p "$DEST_CUSTOM_SKILLS_DIR"
 find "$DEST_CUSTOM_SKILLS_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
+shared_profile_names=()
+if [[ -d "$COMMON_AGENT_SKILLS_DIR" ]]; then
+  while IFS= read -r profile; do
+    shared_profile_names+=("$profile")
+  done < <(list_top_level_dirs "$COMMON_AGENT_SKILLS_DIR")
+fi
+
 skills_to_copy=()
 while IFS= read -r skill; do
+  if array_contains "$skill" "${shared_profile_names[@]}"; then
+    continue
+  fi
   skills_to_copy+=("$skill")
 done < <(
   find "$SOURCE_SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d \

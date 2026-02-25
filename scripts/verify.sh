@@ -34,6 +34,18 @@ say() { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*"; }
 err() { echo "[ERROR] $*"; }
 
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 if ! command -v codex >/dev/null 2>&1; then
   err "codex CLI not found"
   exit 1
@@ -178,6 +190,18 @@ if [[ -d "$AGENT_BASELINE_DIR" ]]; then
   while IFS= read -r line; do
     REPO_AGENT_SKILLS+=("$line")
   done < <(list_top_level_dirs "$AGENT_BASELINE_DIR")
+
+  overlap_count=0
+  for skill in "${REQUIRED_CUSTOM_SKILLS[@]}"; do
+    if array_contains "$skill" "${REPO_AGENT_SKILLS[@]}"; then
+      err "Skill hierarchy overlap detected (custom + shared): $skill"
+      overlap_count=$((overlap_count + 1))
+    fi
+  done
+  if [[ $overlap_count -gt 0 ]]; then
+    err "Invalid hierarchy: $overlap_count overlapping skill(s) between custom and shared agent profiles"
+    exit 1
+  fi
 
   for skill in "${REPO_AGENT_SKILLS[@]}"; do
     if [[ ! -f "$SKILLS_ROOT/$skill/SKILL.md" ]]; then

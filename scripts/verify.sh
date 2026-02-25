@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 CONFIG_FILE="$CODEX_HOME_DIR/config.toml"
@@ -11,10 +12,14 @@ RULES_FILE="$CODEX_HOME_DIR/rules/default.rules"
 RULES_MODE_FILE="$CODEX_HOME_DIR/.better-codex-rules-mode"
 SKILLS_DIR="$CODEX_HOME_DIR/skills"
 SKILLS_ROOT="$SKILLS_DIR"
-CUSTOM_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
 TOOLCHAIN_CHECK="$ROOT_DIR/scripts/check-toolchain.sh"
-PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
-AGENT_BASELINE_DIR="$ROOT_DIR/skills/codex-agents"
+
+REQUESTED_PROFILE="$(detect_profile_os)"
+PROFILE_OS="$(resolve_profile_os "$REQUESTED_PROFILE")"
+PROFILE_ROOT="$(resolve_runtime_root "$REQUESTED_PROFILE")"
+CUSTOM_MANIFEST="$PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+PROJECT_TRUST_SNAPSHOT="$PROFILE_ROOT/config/projects.trust.snapshot.toml"
+AGENT_BASELINE_DIR="$(common_agent_skills_root)"
 
 REQUIRED_MCPS=(
   "context7"
@@ -32,6 +37,10 @@ err() { echo "[ERROR] $*"; }
 if ! command -v codex >/dev/null 2>&1; then
   err "codex CLI not found"
   exit 1
+fi
+
+if [[ "$REQUESTED_PROFILE" != "$PROFILE_OS" ]]; then
+  warn "Profile '$REQUESTED_PROFILE' has no payload, using '$PROFILE_OS'"
 fi
 
 if [[ ! -x "$TOOLCHAIN_CHECK" ]]; then

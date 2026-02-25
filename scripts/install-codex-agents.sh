@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Installs local Codex agent-skills into ~/.codex/skills.
+# Installs shared Codex agent profiles into ~/.codex/skills.
 # Usage:
 #   scripts/install-codex-agents.sh
 #   scripts/install-codex-agents.sh --dry-run
@@ -13,8 +13,9 @@ fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
-SRC_DIR="$ROOT_DIR/skills/codex-agents"
+SRC_DIR="$(common_agent_skills_root)"
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 DEST_DIR="$CODEX_HOME_DIR/skills"
 

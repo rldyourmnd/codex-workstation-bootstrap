@@ -3,9 +3,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 TEST_HOME="/tmp/better-codex-selftest-home"
-MANIFEST_FILE="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
+PROFILE_ROOT="$(profile_runtime_root "macos")"
+MANIFEST_FILE="$PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
 
 say() { echo "[SELF-TEST] $*"; }
 warn() { echo "[SELF-TEST][WARN] $*"; }
@@ -24,6 +26,7 @@ for f in \
   scripts/sync-codex-version.sh \
   scripts/render-portable-rules.sh \
   scripts/os/common/platform.sh \
+  scripts/os/common/layout.sh \
   scripts/os/macos/install/ensure-codex.sh \
   scripts/os/linux/install/ensure-codex.sh \
   scripts/os/macos/install/ensure-claude-code.sh \
@@ -84,7 +87,7 @@ done
 repo_agent_skills=()
 while IFS= read -r line; do
   repo_agent_skills+=("$line")
-done < <(list_top_level_dirs "$ROOT_DIR/skills/codex-agents")
+done < <(list_top_level_dirs "$(common_agent_skills_root)")
 
 for skill in "${repo_agent_skills[@]}"; do
   if [[ ! -f "$TEST_HOME/skills/$skill/SKILL.md" ]]; then
@@ -93,7 +96,7 @@ for skill in "${repo_agent_skills[@]}"; do
   fi
 done
 
-if grep -q '__CONTEXT7_API_KEY__' "$ROOT_DIR/codex/config/config.template.toml"; then
+if grep -q '__CONTEXT7_API_KEY__' "$PROFILE_ROOT/config/config.template.toml"; then
   if ! grep -Eq 'ctx7sk-selftest' "$TEST_HOME/config.toml"; then
     err "Context7 token substitution failed"
     exit 1
@@ -102,7 +105,7 @@ else
   warn "Config template has no Context7 placeholder; skipping substitution assertion"
 fi
 
-if grep -q '__GITHUB_MCP_TOKEN__' "$ROOT_DIR/codex/config/config.template.toml"; then
+if grep -q '__GITHUB_MCP_TOKEN__' "$PROFILE_ROOT/config/config.template.toml"; then
   if ! grep -Eq 'gho_selftest' "$TEST_HOME/config.toml"; then
     err "GitHub MCP token substitution failed"
     exit 1

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 SKIP_CURATED=false
 FORCE=true
@@ -62,12 +63,23 @@ done
 say() { echo "[BOOTSTRAP] $*"; }
 warn() { echo "[BOOTSTRAP][WARN] $*"; }
 
-expected_codex="$({ grep -E '^CODEX_VERSION=' "$ROOT_DIR/codex/meta/toolchain.lock" || true; } | head -n1 | cut -d'=' -f2-)"
 platform="$(platform_id)"
+profile_requested="$(detect_profile_os)"
+profile_os="$(resolve_profile_os "$profile_requested")"
+profile_root="$(resolve_runtime_root "$profile_requested")"
+lock_file="$profile_root/meta/toolchain.lock"
+expected_codex="$({ grep -E '^CODEX_VERSION=' "$lock_file" || true; } | head -n1 | cut -d'=' -f2-)"
 os_setup_script="$ROOT_DIR/scripts/os/$platform/install/ensure-codex.sh"
 os_setup_script_ps1="$ROOT_DIR/scripts/os/$platform/install/ensure-codex.ps1"
 claude_setup_script="$ROOT_DIR/scripts/os/$platform/install/ensure-claude-code.sh"
 claude_setup_script_ps1="$ROOT_DIR/scripts/os/$platform/install/ensure-claude-code.ps1"
+
+if [[ "$profile_requested" != "$profile_os" ]]; then
+  warn "Profile '$profile_requested' has no payload, using '$profile_os'"
+fi
+if [[ ! -f "$lock_file" ]]; then
+  warn "Toolchain lock not found: $lock_file"
+fi
 
 run_powershell_script() {
   local script="$1"

@@ -3,8 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
-SKILLS_DIR="$ROOT_DIR/skills/codex-agents"
+SKILLS_DIR="$(common_agent_skills_root)"
 DOCS_DIR="$ROOT_DIR/docs/agents"
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 QUICK_VALIDATE="$CODEX_HOME_DIR/skills/.system/skill-creator/scripts/quick_validate.py"
@@ -71,7 +72,7 @@ for s in "${skill_profiles[@]}"; do
 done
 for d in "${doc_profiles[@]}"; do
   if ! array_contains "$d" "${skill_profiles[@]}"; then
-    err "Missing skill profile for docs entry: skills/codex-agents/$d"
+    err "Missing skill profile for docs entry: codex/os/common/agents/codex-agents/$d"
     errors=$((errors + 1))
   fi
 done

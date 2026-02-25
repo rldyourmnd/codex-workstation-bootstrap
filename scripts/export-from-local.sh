@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 SOURCE_CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 SOURCE_PATH_SET=false
@@ -53,15 +54,18 @@ SOURCE_GLOBAL_AGENTS="$SOURCE_CODEX_HOME/AGENTS.md"
 SOURCE_RULES="$SOURCE_CODEX_HOME/rules/default.rules"
 SOURCE_SKILLS_DIR="$SOURCE_CODEX_HOME/skills"
 
-DEST_CONFIG_TEMPLATE="$ROOT_DIR/codex/config/config.template.toml"
-DEST_GLOBAL_AGENTS="$ROOT_DIR/codex/agents/global.AGENTS.md"
-DEST_RULES="$ROOT_DIR/codex/rules/default.rules"
-DEST_RULES_TEMPLATE="$ROOT_DIR/codex/rules/default.rules.template"
-DEST_RULES_SOURCE_SNAPSHOT="$ROOT_DIR/codex/rules/default.rules.source.snapshot"
-DEST_CUSTOM_SKILLS_DIR="$ROOT_DIR/codex/skills/custom"
-DEST_CUSTOM_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
-DEST_PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
-DEST_TOOLCHAIN_LOCK="$ROOT_DIR/codex/meta/toolchain.lock"
+MACOS_PROFILE_ROOT="$(profile_runtime_root "macos")"
+COMMON_AGENT_SKILLS_DIR="$(common_agent_skills_root)"
+
+DEST_CONFIG_TEMPLATE="$MACOS_PROFILE_ROOT/config/config.template.toml"
+DEST_GLOBAL_AGENTS="$MACOS_PROFILE_ROOT/agents/global.AGENTS.md"
+DEST_RULES="$MACOS_PROFILE_ROOT/rules/default.rules"
+DEST_RULES_TEMPLATE="$MACOS_PROFILE_ROOT/rules/default.rules.template"
+DEST_RULES_SOURCE_SNAPSHOT="$MACOS_PROFILE_ROOT/rules/default.rules.source.snapshot"
+DEST_CUSTOM_SKILLS_DIR="$MACOS_PROFILE_ROOT/skills/custom"
+DEST_CUSTOM_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+DEST_PROJECT_TRUST_SNAPSHOT="$MACOS_PROFILE_ROOT/config/projects.trust.snapshot.toml"
+DEST_TOOLCHAIN_LOCK="$MACOS_PROFILE_ROOT/meta/toolchain.lock"
 RULES_RENDERER="$ROOT_DIR/scripts/render-portable-rules.sh"
 
 TMP_DIR="$(mktemp -d)"
@@ -99,11 +103,14 @@ if [[ ! -d "$SOURCE_SKILLS_DIR" ]]; then
 fi
 
 mkdir -p \
-  "$ROOT_DIR/codex/agents" \
-  "$ROOT_DIR/codex/rules" \
-  "$ROOT_DIR/codex/skills" \
-  "$ROOT_DIR/codex/skills/custom" \
-  "$ROOT_DIR/codex/meta"
+  "$MACOS_PROFILE_ROOT/agents" \
+  "$MACOS_PROFILE_ROOT/config" \
+  "$MACOS_PROFILE_ROOT/rules" \
+  "$MACOS_PROFILE_ROOT/skills" \
+  "$MACOS_PROFILE_ROOT/skills/custom" \
+  "$MACOS_PROFILE_ROOT/skills/manifests" \
+  "$MACOS_PROFILE_ROOT/meta" \
+  "$COMMON_AGENT_SKILLS_DIR"
 
 cp "$SOURCE_CONFIG" "$DEST_CONFIG_TEMPLATE"
 
@@ -235,9 +242,26 @@ else
   printf '%s\n' "${skills_to_copy[@]}" > "$DEST_CUSTOM_MANIFEST"
 fi
 
+agent_profiles_updated=0
+if [[ -d "$COMMON_AGENT_SKILLS_DIR" ]]; then
+  existing_agent_profiles=()
+  while IFS= read -r profile; do
+    existing_agent_profiles+=("$profile")
+  done < <(list_top_level_dirs "$COMMON_AGENT_SKILLS_DIR")
+
+  for profile in "${existing_agent_profiles[@]}"; do
+    if [[ -f "$SOURCE_SKILLS_DIR/$profile/SKILL.md" ]]; then
+      rsync -a "$SOURCE_SKILLS_DIR/$profile/" "$COMMON_AGENT_SKILLS_DIR/$profile/"
+      agent_profiles_updated=$((agent_profiles_updated + 1))
+    fi
+  done
+fi
+
 say "Export complete"
+say "Target profile updated: macos"
 say "Updated: $DEST_CONFIG_TEMPLATE"
 say "Updated: $DEST_PROJECT_TRUST_SNAPSHOT"
 say "Updated: $DEST_TOOLCHAIN_LOCK"
 say "Updated: $DEST_CUSTOM_MANIFEST"
 say "Copied skills: ${#skills_to_copy[@]}"
+say "Shared agent profiles synced: $agent_profiles_updated"

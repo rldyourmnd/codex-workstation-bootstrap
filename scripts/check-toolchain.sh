@@ -2,7 +2,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOCK_FILE="$ROOT_DIR/codex/meta/toolchain.lock"
+source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
+
+PROFILE_ROOT="$(resolve_runtime_root "$(detect_profile_os)")"
+LOCK_FILE="$PROFILE_ROOT/meta/toolchain.lock"
 
 STRICT=false
 STRICT_CODEX_ONLY=true
@@ -41,7 +45,7 @@ if [[ ! -f "$LOCK_FILE" ]]; then
   exit 1
 fi
 
-required_bins=(codex python3 tar base64 rsync sed awk)
+required_bins=(codex python3 rsync sed awk)
 for bin in "${required_bins[@]}"; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     err "Missing required binary: $bin"

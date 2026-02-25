@@ -3,8 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
-CURATED_MANIFEST="$ROOT_DIR/codex/skills/curated-manifest.txt"
+MACOS_PROFILE_ROOT="$(profile_runtime_root "macos")"
+CURATED_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/curated-manifest.txt"
 OUTPUT_FILE="${1:-}"
 
 err() { echo "[ERROR] $*" >&2; }

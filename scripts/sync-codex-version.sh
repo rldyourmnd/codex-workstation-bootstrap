@@ -3,8 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
-LOCK_FILE="$ROOT_DIR/codex/meta/toolchain.lock"
+PROFILE_ROOT="$(resolve_runtime_root "$(detect_profile_os)")"
+LOCK_FILE="$PROFILE_ROOT/meta/toolchain.lock"
 APPLY=false
 
 while [[ $# -gt 0 ]]; do
